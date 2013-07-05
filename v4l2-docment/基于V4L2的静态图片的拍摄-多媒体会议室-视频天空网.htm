@@ -1,0 +1,407 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=gb2312" />
+<title>基于V4L2的静态图片的拍摄-多媒体会议室-视频天空网</title>
+<meta name="keywords" content="视频天空网" />
+<meta name="description" content="视频天空网" />
+<link href="/templates/css.css" type="text/css" rel="stylesheet" />
+<script language="JavaScript" src="images/js/jquery.min.js"></script>
+<script language="javascript" type="text/javascript" src="/templates/1.js"></script>
+</head>
+<body>
+<center>
+<div class="top">
+<div class="top_1">
+<marquee direction="left" scrollamount="3" width="500" height="28">2012（第11届）中国国际多媒体视音频通信高峰论坛暨产品展示会
+
+
+主题&ldquo;云&rdquo;速前进，创新未来
+
+
+2012年6月27日-28日
+北京汉华国际饭店（五星）
+�
+�
+</marquee>
+</div>
+<div class="top_2"><a href="javascript:window.external.addFavorite('123.116.56.119','视频天空网')">加入收藏</a> | <a href="/show.php?contentid=7610">联系我们</a></div>
+</div><div class="contain">
+<script language="JavaScript" src="data/config.js"></script>
+<script language="JavaScript" src="images/js/jquery.min.js"></script>
+<script language="JavaScript" src="images/js/common.js"></script>
+<script language="JavaScript" src="images/js/login.js"></script>
+<script language="JavaScript" src="images/js/validator.js"></script>
+<script language="javascript" type="text/javascript" src="/templates/1.js"></script>
+<!--logo,用户登陆-->
+<div class="logo_denglu">
+<div class="logo"><img src="/templates/imges/logo.jpg" /></div>
+<div class="ads_1"><script language="javascript" src="http://180.86.97.138/data/js.php?id=29"></script></div>
+<div class="s_denglu">
+<div>
+<div id="div_login" style="display:none">
+<form action="/member/login.php" method="post" name="login" onsubmit="return loginSubmit(this, 0);">
+<ul class="s_denglu_1">
+<li><input type="text" name="username" value="用户名" onclick="this.value=''" class="biaodan_1" /></li>
+<li><input type="text" name="password" value="密码" onclick="this.value=''" class="biaodan_1" /></li>
+ <input type="hidden" name="cookietime" value="0"/>
+ <li style=" padding-top:8px;">
+ <select name="denglu_tyle" onchange="MM_jumpMenu('parent',this,0)">
+  <option value="/">通行证</option>
+  <option value="/bbs/">论坛</option>
+  </select></li>
+ <li style="padding-top:3px;"><input type="image" src="/templates/imges/dian_2.jpg"  class="biaodan_3"/></li>
+ <li style="padding-top:10px;"><a href="/member/choice_model.php">注册</a></li>
+ </ul>
+</form>
+</div>
+<div id="div_logined" class="huiyuan_dl" style="display:none">
+<strong id="logined_username" ></strong>，<a href="member/">会员中心</a> | 
+        <a href="javascript:logout('member/logout.php?action=ajax');">退出登录</a>
+</div>
+</div>
+<div><form action="sousuo.php" name="sousuo" method="get">
+<ul class="s_denglu_2">
+<li><input name="search" type="text" value="例如：输入 450d" onclick="this.value=''" class="biaodan_2" /></li>
+<li><input type="image" src="/templates/imges/dian_3.jpg" /></li>
+ </ul>
+ </form></div>
+</div>
+</div>
+<!--logo,用户登陆/-->
+<!--导航-->
+<div class="dh">
+<ul>
+<li class="dh_bj_left"></li>
+<li class="dh_wenzi"><a href="/index.php">首页<BR /><span class="yw_1">HOME</span></a></li>
+<li class="dh_jiange"></li>
+<li class="dh_wenzi"><a href="/list.php?catid=33">新闻<BR /><span class="yw_1">NEWS</span></a></li>
+<li class="dh_jiange"></li>
+<li class="dh_wenzi"><a href="/list.php?catid=42">产品<BR /><span class="yw_1">PRODUCT</span></a></li>
+<li class="dh_jiange"></li>
+<li class="dh_wenzi"><a href="/list.php?catid=61">市场<BR /><span class="yw_1">MARKET</span></a></li>
+<li class="dh_jiange"></li>
+<li class="dh_wenzi"><a href="/list.php?catid=62">应用<BR /><span class="yw_1">SOLUTIONS</span></a></li>
+<li class="dh_jiange"></li>
+<li class="dh_wenzi"><a href="/list.php?catid=63">技术<BR /><span class="yw_1">TECHNOLOGY</span></a></li>
+<li class="dh_jiange"></li>
+<li class="dh_wenzi"><a href="/list.php?catid=73">展会<BR /><span class="yw_1">SHOW</span></a></li>
+<li class="dh_jiange"></li>
+<li class="dh_wenzi"><a href="/bbs/">论坛<BR /><span class="yw_1">BBS</span></a></li>
+<li class="dh_jiange"></li>
+<li class="dh_wenzi" style="width:110px;"><a href="/show.php?contentid=7609">关于我们<BR /><span class="yw_1">ABOUT US</span></a></li>
+<li class="dh_bj_right"></li>
+</ul>
+</div>
+<!--导航/-->
+<!--二级主体-->
+<div class="erji2">
+<div class="erji2_left">
+<table border="0" cellpadding="0" cellspacing="0"><tr>
+  <td class="gao_1">
+   <div class="new_title">基于V4L2的静态图片的拍摄</div>
+  <!--<div class="new_title_f">安师大发生大幅斯蒂芬斯蒂芬</div>-->
+  <div class="new_bz">来源：视频天空网　发布时间：2011-01-07　浏览数：<span id="hits" style="color:#FF0000"></span>
+  <script language="JavaScript" src="count.php?contentid=8059"></script>
+  </div>
+  <div class="new_content"><br />
+<div style="line-height: 20pt; layout-grid-mode: char">&nbsp;</div>
+<div style="text-align: center; line-height: 20pt; layout-grid-mode: char" align="center">&nbsp;</div>
+<div style="text-align: center; line-height: 20pt; layout-grid-mode: char" align="center">文<span>/北京邮电大学&nbsp;鲍峰&nbsp;游向东</span></div>
+<div style="line-height: 16pt; layout-grid-mode: char">&nbsp;</div>
+<div style="text-indent: -22.5pt; margin: 7.8pt 0cm 7.8pt 22.5pt; layout-grid-mode: char"><b><span>一、</span></b><b>前言</b></div>
+<div style="line-height: 18pt; text-indent: 17.85pt; layout-grid-mode: char">以下静态图片拍摄的工作都是基于<span>linux的嵌入式系统。首先将介绍基于V4L2的静态图片拍摄的软平台和用到的技术。</span></div>
+<div style="margin: 7.8pt 0cm; layout-grid-mode: char"><b>1</b><b>．</b>嵌入式<span>Linux</span></div>
+<div style="line-height: 18pt; layout-grid-mode: char"><span>&nbsp;&nbsp;&nbsp; </span>嵌入式<span>Linux是将Linux操作系统进行裁剪修改，使之能在嵌入式计算机系统上运行的一种操作系统。嵌入式linux既继承了Interlnet上无限的开放源代码资源，又具有嵌入式操作系统的特性。它有许多优点：稳定、良好的移植性、优秀的网络功能、对各种文件系统完备的支持和标准丰富的API。它专为嵌入式系统做了许多小型化的工作，目前已支持多款CPU。其编译后目标文件可控制在几百KB~几MB数量级，并已经被成功地移植到很多平台上。</span></div>
+<div style="margin: 7.8pt 0cm; layout-grid-mode: char"><b>2</b><b>．</b>V4L2</div>
+<div style="line-height: 18pt; text-indent: 21pt; layout-grid-mode: char">V4L2，其全称是<span>Video4Linux2（Video for Linux two），是V4L的改进版。它是在linux内核中关于视频设备的API接口，涉及开关视频设备、采集并处理视频图像信息。V4L2从2.5.x版本的内核中开始出现。</span></div>
+<div style="margin: 7.8pt 0cm; layout-grid-mode: char"><b>3</b><b>．</b>Shell Script</div>
+<div style="line-height: 18pt; text-indent: 21pt; layout-grid-mode: char">Shell Script，与<span>Windows/Dos下的批处理相似，也就是用各类命令预先放入到一个文件中，方便一次性执行的一个程序文件，主要是方便管理员进行设置或者管理用的。shell script是利用shell的功能所写的一个程序，这个程序是使用纯文本本件，将一些shell的语法与指令写在里面，运用数组，循环，条件以及逻辑判断等组织起来，然后用正规表示法，管线命令以及数据流重导向等功能，以达到我们所想要的处理目的。</span></div>
+<div style="text-indent: -22.5pt; margin: 7.8pt 0cm 7.8pt 22.5pt; layout-grid-mode: char"><b><span>二、</span></b><b>获取静态图片的原理及过程</b></div>
+<div style="line-height: 18pt; text-indent: 21pt; layout-grid-mode: char">获取静态图片的过程分为三个步骤，首先是通过<span>V4L2从摄像头获取原始的YUV图像数据，其次是将这些YUV数据转化为RGB数据，最后是将这些RGB数据封装为bmp格式的图形文件。</span></div>
+<div style="line-height: 18pt; margin: 7.8pt 0cm; layout-grid-mode: char"><b>1</b><b>．</b>从摄像头获取原始数据</div>
+<div style="line-height: 18pt; text-indent: 21pt; layout-grid-mode: char">原始数据的获取，是通过<span>V4L2接口实现的。在linux下，摄像头硬件已经被映射为文件&ldquo;/dev/v4l2/video0&rdquo;，这样，对数据的操作就变得简单起来。</span></div>
+<div style="line-height: 18pt; text-indent: 21pt; layout-grid-mode: char">首先，我们利用<span>open函数打开这个文件，获得其文件描述符fd_v4l2，下面所有的工作都是围绕着这个文件描述符进行。</span></div>
+<div style="line-height: 18pt; text-indent: 21pt; layout-grid-mode: char">接下来的工作，我们主要通过<span>V4L2中的三个结构体来展开。</span></div>
+<div style="line-height: 18pt; text-indent: 21pt; layout-grid-mode: char">第一个结构体叫做<span>v4l2_format，它由一个v4l2_buffer_type枚举类型type和联合体fmt构成，来描述摄像头当前行为和数据的格式。我们把type设成V4L2_BUF_TYPE_VIDEO_CAPTURE，表示定义了一个视频捕获流类型的buffer。fmt中，我们只关心表示图形格式的v4l2_pix_format型结构体pix。需要设定的是pix里这么几个变量，pixelformat表示压缩格式，这里我们定义为V4L2_PIX_FMT_YUYV；width表示图像的宽度，以字节为单位；height表示图像的高度，以字节为单位；sizeimage表示图像所占的存储空间大小，以字节为单位；bytesperline表示每一行的字节数。设定好这些之后，用ioctl函数通过这个结构体对摄像头进行设定。</span></div>
+<div style="line-height: 18pt; text-indent: 21pt; layout-grid-mode: char">第二个结构体叫<span>v4l2_crop，它由type和v4l2_rect类型结构体c构成，来描述最终输出图片的属性。type同上，c代表我们要生成的图片的属性。left表示生成区域的起始横坐标，相对于采集到的全部图片；top表示生成区域的起始纵坐标，相对于采集到的全部图片；width表示生成图片的宽度；height表示生成图片的高度。设定好这些之后，用ioctl函数通过这个结构体对摄像头进行设定。</span></div>
+<div style="line-height: 18pt; text-indent: 21pt; layout-grid-mode: char">第三个结构体叫<span>v4l2_streamparm，它由type和联合体pare构成，来描述视频流的属性。type同上，由于我们选的是V4L2_BUF_TYPE_VIDEO_CAPTURE，所以我们仅需设定pare中的v412_capture型结构体capture即可。在其中，v4l2_fract型结构体timeperframe表示平均每一帧所占的时间，由其元素numerator和denominator共同决定，该时长为numerator/denominator；而capturemode则表示捕获的数据类型，目前采用640&times;480，故设其值为0。设定好这些之后，用ioctl函数通过这个结构体对摄像头进行设定。</span></div>
+<div style="line-height: 18pt; text-indent: 21pt; layout-grid-mode: char">这些全部做好之后，前期初始化工作就完成，下面开始获取图片原始数据的工作。先通过<span>ioctl来获得生成图片的高度、宽度、大小等数据，以此在内存中分配一块儿与之对应的区域来存放数据。之后，直接运用read函数，从fd_v4l2中读取相应大小的数据，我们就完成了原始YUV图像数据的采集。这部分数据全部放在了刚刚分配的内存当中。</span></div>
+<div style="line-height: 18pt; margin: 7.8pt 0cm; layout-grid-mode: char"><b>2</b><b>．</b>由<span>YUV转化为RGB数据</span></div>
+<div style="line-height: 18pt; text-indent: 21pt; layout-grid-mode: char">YUV<span style="color: black">和RGB都是颜色空间，是颜色的两种不同的表示方式。</span></div>
+<div style="line-height: 18pt; text-indent: 21pt; layout-grid-mode: char">YUV是被欧洲电视系统所采用的一种颜色编码方法，<span style="letter-spacing: 0.4pt; color: black">是PAL和SECAM模拟彩色电视制式采用的颜色空间</span>，其中<span>Y代表亮度，UV代表色差，U和V是构成彩色的两个分量。他主要用于优化彩色视频信号的传输，使其向后相容老式黑白电视。</span></div>
+<div style="line-height: 18pt; text-indent: 21pt; layout-grid-mode: char">我们从摄像头采集到的信息格式是<span>YUV色彩空间的一种：YUYV。这是一种带有压缩性质的格式。在这种格式下，每两个像素占用4个字节的数据，这四个字节分别是2个Y分量，1个U分量和1个V分量。其中Y分量为每一个像素所独有，而U和V则是由这两个像素所共有。其示意图如下：</span></div>
+<div style="line-height: 18pt; margin: 7.8pt 0cm 0pt; layout-grid-mode: char">addr + 0：<span><span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Y<sub>00</sub> U<sub>00</sub> Y<sub>01</sub> V<sub>00</sub> Y<sub>02</sub> U<sub>01</sub> Y<sub>03</sub> V<sub>01</sub></span></span></div>
+<div style="line-height: 18pt; layout-grid-mode: char">addr + 8：<span><span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Y<sub>10</sub> U<sub>10</sub> Y<sub>11</sub> V<sub>10</sub> Y<sub>12</sub> U<sub>11</sub> Y<sub>13</sub> V<sub>11</sub></span></span></div>
+<div style="line-height: 18pt; layout-grid-mode: char">addr + 16：<span><span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Y<sub>20</sub> U<sub>20</sub> Y<sub>21</sub> V<sub>20</sub> Y<sub>22</sub> U<sub>21</sub> Y<sub>23</sub> V<sub>21</sub></span></span></div>
+<div style="line-height: 18pt; layout-grid-mode: char">addr + 24：<span><span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Y<sub>30</sub> U<sub>30</sub> Y<sub>31</sub> V<sub>30</sub> Y<sub>32</sub> U<sub>31</sub> Y<sub>33</sub> V<sub>31</sub></span></span></div>
+<div style="text-align: center; line-height: 18pt; margin: 7.8pt 0cm; layout-grid-mode: char" align="center">例<span>1 &nbsp;YUYV格式4&times;4像素</span></div>
+<div style="line-height: 18pt; layout-grid-mode: char">其中，<span>addr表示数据首地址，图中每一个元素占用一个字节。</span></div>
+<div style="line-height: 18pt; text-indent: 21pt; layout-grid-mode: char">而<span>RGB是工业界的一种颜色标准，是通过对红（R）、绿（G）、蓝（B）三个颜色通道的变化以及它们相互之间的叠加来得到各式各样的颜色的，RGB即是代表红、绿、蓝三个通道的颜色，这个标准几乎包括了人类视力所能感知的所有颜色，是目前运用最广的颜色系统之一。</span></div>
+<div style="line-height: 18pt; text-indent: 21.75pt; layout-grid-mode: char">保存为文件时采用<span>bmp24位位图。在这种格式下，每一个像素占用3个字节的数据，这三个字节分别是B分量、G分量和R分量。其示意图如下：</span></div>
+<div style="line-height: 18pt; margin: 7.8pt 0cm 0pt; layout-grid-mode: char">addr + 0：<span><span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; B<sub>00</sub> G<sub>00</sub> R<sub>00</sub> B<sub>01</sub> G<sub>01</sub> R<sub>01</sub> B<sub>02</sub> G<sub>02</sub> R<sub>02</sub> B<sub>03</sub> G<sub>03</sub> R<sub>03</sub></span></span></div>
+<div style="line-height: 18pt; layout-grid-mode: char">addr + 12：<span><span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; B<sub>10</sub> G<sub>10</sub> R<sub>10</sub> B<sub>11</sub> G<sub>11</sub> R<sub>11</sub> B<sub>12</sub> G<sub>12</sub> R<sub>12</sub> B<sub>13</sub> G<sub>13</sub> R<sub>13</sub></span></span></div>
+<div style="line-height: 18pt; layout-grid-mode: char">addr + 24：<span><span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; B<sub>20</sub> G<sub>20</sub> R<sub>20</sub> B<sub>21</sub> G<sub>21</sub> R<sub>21</sub> B<sub>22</sub> G<sub>22</sub> R<sub>22</sub> B<sub>23</sub> G<sub>23</sub> R<sub>23</sub></span></span></div>
+<div style="line-height: 18pt; layout-grid-mode: char">addr + 36：<span><span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; B<sub>30</sub> G<sub>30</sub> R<sub>30</sub> B<sub>31</sub> G<sub>31</sub> R<sub>31</sub> B<sub>32</sub> G<sub>32</sub> R<sub>32</sub> B<sub>33</sub> G<sub>33</sub> R<sub>33</sub></span></span></div>
+<div style="text-align: center; line-height: 18pt; margin: 7.8pt 0cm; layout-grid-mode: char" align="center">例<span>2&nbsp;bmp24位位图格式4&times;4像素</span></div>
+<div style="line-height: 18pt; layout-grid-mode: char">其中，<span>addr表示数据首地址，图中每一个元素占用一个字节。</span></div>
+<div style="line-height: 18pt; layout-grid-mode: char">YUV和<span>RGB两者之间可以相互转化，公式如下（RGB取值范围均为0-255）：</span></div>
+<div style="line-height: 18pt; text-indent: 21pt; margin: 7.8pt 0cm 0pt; layout-grid-mode: char">Y = 0.299R + 0.587G + 0.114B</div>
+<div style="line-height: 18pt; text-indent: 21pt; layout-grid-mode: char">U = -0.147R - 0.289G + 0.436B</div>
+<div style="line-height: 18pt; text-indent: 21pt; layout-grid-mode: char">V = 0.615R - 0.515G - 0.100B</div>
+<div style="line-height: 18pt; margin: 7.8pt 0cm 0pt 21pt; layout-grid-mode: char">R = Y + 1.14V</div>
+<div style="line-height: 18pt; text-indent: 21pt; layout-grid-mode: char">G = Y - 0.39U - 0.58V</div>
+<div style="line-height: 18pt; text-indent: 21pt; margin: 0cm 0cm 7.8pt; layout-grid-mode: char">B = Y + 2.03U</div>
+<div style="line-height: 18pt; text-indent: 21.75pt; layout-grid-mode: char">那么在软件中要做的工作，就是把<span>Y、U、V三个分量分别读取出来，经过转换后，再按照BGR的顺序，将其写入文件。</span></div>
+<div style="line-height: 18pt; margin: 7.8pt 0cm; layout-grid-mode: char"><b>3</b><b>．</b>封装为<span>bmp格式图形文件</span></div>
+<div style="line-height: 18pt; layout-grid-mode: char"><span>&nbsp;&nbsp;&nbsp; BMP</span>是一种与硬件设备无关的图像文件格式，使用非常广。它采用位映射存储格式，除了图像深度可选以外，不采用其他任何压缩，因此，<span>BMP文件所占用的空间很大。BMP文件的图像深度可选lbit、4bit、8bit及24bit。BMP文件存储数据时，图像的扫描方式是按从左到右、从下到上的顺序。</span>位图文件的格式如下图所示：<br />
+<img alt="" src="/uploadfile/2011/0107/20110107102004891.jpg" /><br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 图<span>1 &nbsp;bmp文件格式</span></div>
+<div style="line-height: 18pt; text-indent: 21.75pt; layout-grid-mode: char">如图示，<span>bmp文件由三部分组成：</span></div>
+<div style="line-height: 18pt; text-indent: 21.75pt; layout-grid-mode: char">首先是位图文件头，占了<span>14个字节，其结构体如下：</span></div>
+<div style="line-height: 18pt; text-indent: 21.75pt; layout-grid-mode: char">struct FileHead</div>
+<div style="line-height: 18pt; text-indent: 21.75pt; layout-grid-mode: char">{</div>
+<div style="line-height: 18pt; text-indent: 21.75pt; layout-grid-mode: char"><span>&nbsp;&nbsp;&nbsp; WORD&nbsp;&nbsp;&nbsp; bfType;</span></div>
+<div style="line-height: 18pt; text-indent: 21.75pt; layout-grid-mode: char"><span>&nbsp;&nbsp;&nbsp; DWORD&nbsp;&nbsp; bfSize;</span></div>
+<div style="line-height: 18pt; text-indent: 21.75pt; layout-grid-mode: char"><span>&nbsp;&nbsp;&nbsp; WORD&nbsp;&nbsp;&nbsp; bfReserved1;</span></div>
+<div style="line-height: 18pt; text-indent: 21.75pt; layout-grid-mode: char"><span>&nbsp;&nbsp;&nbsp; WORD&nbsp;&nbsp;&nbsp; bfReserved2;</span></div>
+<div style="line-height: 18pt; text-indent: 21.75pt; layout-grid-mode: char"><span>&nbsp;&nbsp;&nbsp; DWORD&nbsp;&nbsp; bfOffBits;</span></div>
+<div style="line-height: 18pt; text-indent: 21.75pt; layout-grid-mode: char">};</div>
+<div style="line-height: 18pt; layout-grid-mode: char">其中，</div>
+<table border="1" cellspacing="0" cellpadding="0" style="border-bottom: medium none; border-left: medium none; margin: auto auto auto 5.4pt; border-collapse: collapse; border-top: medium none; border-right: medium none">
+    <tbody>
+        <tr>
+            <td valign="top" width="127" style="border-bottom: windowtext 1pt solid; border-left: windowtext 1pt solid; padding-bottom: 0cm; background-color: transparent; padding-left: 5.4pt; width: 95.4pt; padding-right: 5.4pt; border-top: windowtext 1pt solid; border-right: windowtext 1pt solid; padding-top: 0cm">
+            <div style="line-height: 18pt; layout-grid-mode: char">bfType</div>
+            </td>
+            <td valign="top" width="425" style="border-bottom: windowtext 1pt solid; border-left: #d4d0c8; padding-bottom: 0cm; background-color: transparent; padding-left: 5.4pt; width: 318.6pt; padding-right: 5.4pt; border-top: windowtext 1pt solid; border-right: windowtext 1pt solid; padding-top: 0cm">
+            <div style="line-height: 18pt; layout-grid-mode: char">说明文件的类型，该值必需是<span>0x4D42，也就是字符'BM'</span></div>
+            </td>
+        </tr>
+        <tr>
+            <td valign="top" width="127" style="border-bottom: windowtext 1pt solid; border-left: windowtext 1pt solid; padding-bottom: 0cm; background-color: transparent; padding-left: 5.4pt; width: 95.4pt; padding-right: 5.4pt; border-top: #d4d0c8; border-right: windowtext 1pt solid; padding-top: 0cm">
+            <div style="line-height: 18pt; layout-grid-mode: char">bfSize</div>
+            </td>
+            <td valign="top" width="425" style="border-bottom: windowtext 1pt solid; border-left: #d4d0c8; padding-bottom: 0cm; background-color: transparent; padding-left: 5.4pt; width: 318.6pt; padding-right: 5.4pt; border-top: #d4d0c8; border-right: windowtext 1pt solid; padding-top: 0cm">
+            <div style="line-height: 18pt; layout-grid-mode: char">说明该位图文件的大小，用字节为单位</div>
+            </td>
+        </tr>
+        <tr>
+            <td valign="top" width="127" style="border-bottom: windowtext 1pt solid; border-left: windowtext 1pt solid; padding-bottom: 0cm; background-color: transparent; padding-left: 5.4pt; width: 95.4pt; padding-right: 5.4pt; border-top: #d4d0c8; border-right: windowtext 1pt solid; padding-top: 0cm">
+            <div style="line-height: 18pt; layout-grid-mode: char">bfReserved1</div>
+            </td>
+            <td valign="top" width="425" style="border-bottom: windowtext 1pt solid; border-left: #d4d0c8; padding-bottom: 0cm; background-color: transparent; padding-left: 5.4pt; width: 318.6pt; padding-right: 5.4pt; border-top: #d4d0c8; border-right: windowtext 1pt solid; padding-top: 0cm">
+            <div style="line-height: 18pt; layout-grid-mode: char">保留，必须设置为<span>0</span></div>
+            </td>
+        </tr>
+        <tr>
+            <td valign="top" width="127" style="border-bottom: windowtext 1pt solid; border-left: windowtext 1pt solid; padding-bottom: 0cm; background-color: transparent; padding-left: 5.4pt; width: 95.4pt; padding-right: 5.4pt; border-top: #d4d0c8; border-right: windowtext 1pt solid; padding-top: 0cm">
+            <div style="line-height: 18pt; layout-grid-mode: char">bfReserved2</div>
+            </td>
+            <td valign="top" width="425" style="border-bottom: windowtext 1pt solid; border-left: #d4d0c8; padding-bottom: 0cm; background-color: transparent; padding-left: 5.4pt; width: 318.6pt; padding-right: 5.4pt; border-top: #d4d0c8; border-right: windowtext 1pt solid; padding-top: 0cm">
+            <div style="line-height: 18pt; layout-grid-mode: char">保留，必须设置为<span>0</span></div>
+            </td>
+        </tr>
+        <tr>
+            <td valign="top" width="127" style="border-bottom: windowtext 1pt solid; border-left: windowtext 1pt solid; padding-bottom: 0cm; background-color: transparent; padding-left: 5.4pt; width: 95.4pt; padding-right: 5.4pt; border-top: #d4d0c8; border-right: windowtext 1pt solid; padding-top: 0cm">
+            <div style="line-height: 18pt; layout-grid-mode: char">bfOffBits</div>
+            </td>
+            <td valign="top" width="425" style="border-bottom: windowtext 1pt solid; border-left: #d4d0c8; padding-bottom: 0cm; background-color: transparent; padding-left: 5.4pt; width: 318.6pt; padding-right: 5.4pt; border-top: #d4d0c8; border-right: windowtext 1pt solid; padding-top: 0cm">
+            <div style="line-height: 18pt; layout-grid-mode: char">说明从文件头开始到实际的图象数据之间的字节的偏移量。</div>
+            </td>
+        </tr>
+    </tbody>
+</table>
+<div style="text-align: center; line-height: 18pt; margin: 0cm 0cm 7.8pt; layout-grid-mode: char" align="center">表<span>1 位图文件头各成员含义</span></div>
+<div style="line-height: 18pt; text-indent: 21.75pt; layout-grid-mode: char">第二部分是位图信息。其中位图信息头占了<span>40个字节，调色板数据的大小视情况而定，我们用的是24位bmp格式不存在调色板数据。位图信息头的结构体如下：</span></div>
+<div style="line-height: 18pt; text-indent: 21.75pt; layout-grid-mode: char">struct Infohead</div>
+<div style="line-height: 18pt; text-indent: 21.75pt; layout-grid-mode: char">{</div>
+<div style="line-height: 18pt; text-indent: 21.75pt; layout-grid-mode: char"><span>&nbsp;&nbsp;&nbsp; DWORD&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; biSize;</span></div>
+<div style="line-height: 18pt; text-indent: 21.75pt; layout-grid-mode: char"><span>&nbsp;&nbsp;&nbsp; LONG&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;biWidth;</span></div>
+<div style="line-height: 18pt; text-indent: 21.75pt; layout-grid-mode: char"><span>&nbsp;&nbsp;&nbsp; LONG&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;biHeight;</span></div>
+<div style="line-height: 18pt; text-indent: 21.75pt; layout-grid-mode: char"><span>&nbsp;&nbsp;&nbsp; WORD&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;biPlanes;</span></div>
+<div style="line-height: 18pt; text-indent: 21.75pt; layout-grid-mode: char"><span>&nbsp;&nbsp;&nbsp; WORD&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp; &nbsp;&nbsp;biBitCount;</span></div>
+<div style="line-height: 18pt; text-indent: 21.75pt; layout-grid-mode: char"><span>&nbsp;&nbsp;&nbsp; DWORD&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; biCompress;&nbsp;</span></div>
+<div style="line-height: 18pt; text-indent: 21.75pt; layout-grid-mode: char"><span>&nbsp;&nbsp;&nbsp; DWORD&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; biSizeImage;</span></div>
+<div style="line-height: 18pt; text-indent: 21.75pt; layout-grid-mode: char"><span>&nbsp;&nbsp;&nbsp; LONG&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;biXPelsPerMeter;</span></div>
+<div style="line-height: 18pt; text-indent: 21.75pt; layout-grid-mode: char"><span>&nbsp;&nbsp;&nbsp; LONG&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;biYPelsPerMeter;</span></div>
+<div style="line-height: 18pt; text-indent: 21.75pt; layout-grid-mode: char"><span>&nbsp;&nbsp;&nbsp; DWORD&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; biClrUsed;</span></div>
+<div style="line-height: 18pt; text-indent: 21.75pt; layout-grid-mode: char"><span>&nbsp;&nbsp;&nbsp; DWORD&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; biClrImportant;</span></div>
+<div style="line-height: 18pt; text-indent: 21.75pt; layout-grid-mode: char">};</div>
+<div style="line-height: 18pt; layout-grid-mode: char">其中，</div>
+<table border="1" cellspacing="0" cellpadding="0" width="552" style="border-bottom: medium none; border-left: medium none; margin: auto auto auto 5.4pt; width: 414pt; border-collapse: collapse; border-top: medium none; border-right: medium none">
+    <tbody>
+        <tr>
+            <td valign="top" width="132" style="border-bottom: windowtext 1pt solid; border-left: windowtext 1pt solid; padding-bottom: 0cm; background-color: transparent; padding-left: 5.4pt; width: 99pt; padding-right: 5.4pt; border-top: windowtext 1pt solid; border-right: windowtext 1pt solid; padding-top: 0cm">
+            <div style="line-height: 18pt; layout-grid-mode: char">biSize</div>
+            </td>
+            <td valign="top" width="420" style="border-bottom: windowtext 1pt solid; border-left: #d4d0c8; padding-bottom: 0cm; background-color: transparent; padding-left: 5.4pt; width: 315pt; padding-right: 5.4pt; border-top: windowtext 1pt solid; border-right: windowtext 1pt solid; padding-top: 0cm">
+            <div style="line-height: 18pt; layout-grid-mode: char">说明<span>Infohead结构所需要的字数，本程序中设为40</span></div>
+            </td>
+        </tr>
+        <tr>
+            <td valign="top" width="132" style="border-bottom: windowtext 1pt solid; border-left: windowtext 1pt solid; padding-bottom: 0cm; background-color: transparent; padding-left: 5.4pt; width: 99pt; padding-right: 5.4pt; border-top: #d4d0c8; border-right: windowtext 1pt solid; padding-top: 0cm">
+            <div style="line-height: 18pt; layout-grid-mode: char">biWidth</div>
+            </td>
+            <td valign="top" width="420" style="border-bottom: windowtext 1pt solid; border-left: #d4d0c8; padding-bottom: 0cm; background-color: transparent; padding-left: 5.4pt; width: 315pt; padding-right: 5.4pt; border-top: #d4d0c8; border-right: windowtext 1pt solid; padding-top: 0cm">
+            <div style="line-height: 18pt; layout-grid-mode: char">说明图象的宽度，以象素为单位</div>
+            </td>
+        </tr>
+        <tr>
+            <td valign="top" width="132" style="border-bottom: windowtext 1pt solid; border-left: windowtext 1pt solid; padding-bottom: 0cm; background-color: transparent; padding-left: 5.4pt; width: 99pt; padding-right: 5.4pt; border-top: #d4d0c8; border-right: windowtext 1pt solid; padding-top: 0cm">
+            <div style="line-height: 18pt; layout-grid-mode: char">biHeight</div>
+            </td>
+            <td valign="top" width="420" style="border-bottom: windowtext 1pt solid; border-left: #d4d0c8; padding-bottom: 0cm; background-color: transparent; padding-left: 5.4pt; width: 315pt; padding-right: 5.4pt; border-top: #d4d0c8; border-right: windowtext 1pt solid; padding-top: 0cm">
+            <div style="line-height: 18pt; layout-grid-mode: char">说明图象的高度，以象素为单位。</div>
+            </td>
+        </tr>
+        <tr>
+            <td valign="top" width="132" style="border-bottom: windowtext 1pt solid; border-left: windowtext 1pt solid; padding-bottom: 0cm; background-color: transparent; padding-left: 5.4pt; width: 99pt; padding-right: 5.4pt; border-top: #d4d0c8; border-right: windowtext 1pt solid; padding-top: 0cm">
+            <div style="line-height: 18pt; layout-grid-mode: char">biPlanes</div>
+            </td>
+            <td valign="top" width="420" style="border-bottom: windowtext 1pt solid; border-left: #d4d0c8; padding-bottom: 0cm; background-color: transparent; padding-left: 5.4pt; width: 315pt; padding-right: 5.4pt; border-top: #d4d0c8; border-right: windowtext 1pt solid; padding-top: 0cm">
+            <div style="line-height: 18pt; layout-grid-mode: char">为目标设备说明位面数，其值将总是被设为<span>1</span></div>
+            </td>
+        </tr>
+        <tr>
+            <td valign="top" width="132" style="border-bottom: windowtext 1pt solid; border-left: windowtext 1pt solid; padding-bottom: 0cm; background-color: transparent; padding-left: 5.4pt; width: 99pt; padding-right: 5.4pt; border-top: #d4d0c8; border-right: windowtext 1pt solid; padding-top: 0cm">
+            <div style="line-height: 18pt; layout-grid-mode: char">biBitCount</div>
+            </td>
+            <td valign="top" width="420" style="border-bottom: windowtext 1pt solid; border-left: #d4d0c8; padding-bottom: 0cm; background-color: transparent; padding-left: 5.4pt; width: 315pt; padding-right: 5.4pt; border-top: #d4d0c8; border-right: windowtext 1pt solid; padding-top: 0cm">
+            <div style="line-height: 18pt; layout-grid-mode: char">说明比特数<span>/象素，其值为1、4、8、16、24、或32。本程序中设为24</span></div>
+            </td>
+        </tr>
+        <tr>
+            <td valign="top" width="132" style="border-bottom: windowtext 1pt solid; border-left: windowtext 1pt solid; padding-bottom: 0cm; background-color: transparent; padding-left: 5.4pt; width: 99pt; padding-right: 5.4pt; border-top: #d4d0c8; border-right: windowtext 1pt solid; padding-top: 0cm">
+            <div style="line-height: 18pt; layout-grid-mode: char">biCompress</div>
+            </td>
+            <td valign="top" width="420" style="border-bottom: windowtext 1pt solid; border-left: #d4d0c8; padding-bottom: 0cm; background-color: transparent; padding-left: 5.4pt; width: 315pt; padding-right: 5.4pt; border-top: #d4d0c8; border-right: windowtext 1pt solid; padding-top: 0cm">
+            <div style="line-height: 18pt; layout-grid-mode: char">说明图象数据压缩的类型，本程序中设为<span>0</span></div>
+            </td>
+        </tr>
+        <tr>
+            <td valign="top" width="132" style="border-bottom: windowtext 1pt solid; border-left: windowtext 1pt solid; padding-bottom: 0cm; background-color: transparent; padding-left: 5.4pt; width: 99pt; padding-right: 5.4pt; border-top: #d4d0c8; border-right: windowtext 1pt solid; padding-top: 0cm">
+            <div style="line-height: 18pt; layout-grid-mode: char">biSizeImage</div>
+            </td>
+            <td valign="top" width="420" style="border-bottom: windowtext 1pt solid; border-left: #d4d0c8; padding-bottom: 0cm; background-color: transparent; padding-left: 5.4pt; width: 315pt; padding-right: 5.4pt; border-top: #d4d0c8; border-right: windowtext 1pt solid; padding-top: 0cm">
+            <div style="line-height: 18pt; layout-grid-mode: char">说明图象的大小，以字节为单位。当用<span>BI_RGB格式时，可设置为0</span></div>
+            </td>
+        </tr>
+        <tr>
+            <td valign="top" width="132" style="border-bottom: windowtext 1pt solid; border-left: windowtext 1pt solid; padding-bottom: 0cm; background-color: transparent; padding-left: 5.4pt; width: 99pt; padding-right: 5.4pt; border-top: #d4d0c8; border-right: windowtext 1pt solid; padding-top: 0cm">
+            <div style="line-height: 18pt; layout-grid-mode: char">biXPelsPerMeter</div>
+            </td>
+            <td valign="top" width="420" style="border-bottom: windowtext 1pt solid; border-left: #d4d0c8; padding-bottom: 0cm; background-color: transparent; padding-left: 5.4pt; width: 315pt; padding-right: 5.4pt; border-top: #d4d0c8; border-right: windowtext 1pt solid; padding-top: 0cm">
+            <div style="line-height: 18pt; layout-grid-mode: char">说明水平分辨率，用象素<span>/米表示</span></div>
+            </td>
+        </tr>
+        <tr>
+            <td valign="top" width="132" style="border-bottom: windowtext 1pt solid; border-left: windowtext 1pt solid; padding-bottom: 0cm; background-color: transparent; padding-left: 5.4pt; width: 99pt; padding-right: 5.4pt; border-top: #d4d0c8; border-right: windowtext 1pt solid; padding-top: 0cm">
+            <div style="line-height: 18pt; layout-grid-mode: char">biYPelsPerMeter</div>
+            </td>
+            <td valign="top" width="420" style="border-bottom: windowtext 1pt solid; border-left: #d4d0c8; padding-bottom: 0cm; background-color: transparent; padding-left: 5.4pt; width: 315pt; padding-right: 5.4pt; border-top: #d4d0c8; border-right: windowtext 1pt solid; padding-top: 0cm">
+            <div style="line-height: 18pt; layout-grid-mode: char">说明垂直分辨率，用象素<span>/米表示</span></div>
+            </td>
+        </tr>
+        <tr>
+            <td valign="top" width="132" style="border-bottom: windowtext 1pt solid; border-left: windowtext 1pt solid; padding-bottom: 0cm; background-color: transparent; padding-left: 5.4pt; width: 99pt; padding-right: 5.4pt; border-top: #d4d0c8; border-right: windowtext 1pt solid; padding-top: 0cm">
+            <div style="line-height: 18pt; layout-grid-mode: char">biClrUsed</div>
+            </td>
+            <td valign="top" width="420" style="border-bottom: windowtext 1pt solid; border-left: #d4d0c8; padding-bottom: 0cm; background-color: transparent; padding-left: 5.4pt; width: 315pt; padding-right: 5.4pt; border-top: #d4d0c8; border-right: windowtext 1pt solid; padding-top: 0cm">
+            <div style="line-height: 18pt; layout-grid-mode: char">说明位图实际使用的彩色表中的颜色索引数（设为<span>0的话，则说明使用所有调色板项）</span></div>
+            </td>
+        </tr>
+        <tr>
+            <td valign="top" width="132" style="border-bottom: windowtext 1pt solid; border-left: windowtext 1pt solid; padding-bottom: 0cm; background-color: transparent; padding-left: 5.4pt; width: 99pt; padding-right: 5.4pt; border-top: #d4d0c8; border-right: windowtext 1pt solid; padding-top: 0cm">
+            <div style="line-height: 18pt; layout-grid-mode: char">biClrImportant</div>
+            </td>
+            <td valign="top" width="420" style="border-bottom: windowtext 1pt solid; border-left: #d4d0c8; padding-bottom: 0cm; background-color: transparent; padding-left: 5.4pt; width: 315pt; padding-right: 5.4pt; border-top: #d4d0c8; border-right: windowtext 1pt solid; padding-top: 0cm">
+            <div style="line-height: 18pt; layout-grid-mode: char">说明对图象显示有重要影响的颜色索引的数目，如果是<span>0，表示都重要</span></div>
+            </td>
+        </tr>
+    </tbody>
+</table>
+<div style="text-align: center; line-height: 18pt; margin: 0cm 0cm 7.8pt; layout-grid-mode: char" align="center">表<span>2 位图信息头各成员含义</span></div>
+<div style="line-height: 18pt; text-indent: 21.75pt; layout-grid-mode: char"><br clear="all" />
+最后就是像素数据部分。把转化好的<span>RGB的数据，按照从左到右、从下到上、BGR的顺序写在位图信息头之后即可。采集到的图像传输到PC，可见如图2效果。<br />
+<img alt="" src="/uploadfile/2011/0107/20110107102049439.jpg" /></span><br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 图<span>2&nbsp; 拍摄到的BMP图片效果</span></div>
+<div style="margin: 7.8pt 0cm; layout-grid-mode: char"><b><span>三、<span style="font: 7pt 'Times New Roman'">&nbsp;&nbsp;&nbsp;&nbsp; </span></span></b><b>用<span>Shell</span></b> <b>Script</b><b>来提高实用性</b></div>
+<div style="line-height: 18pt; text-indent: 21.75pt; layout-grid-mode: char">上面所描述的程序，实现的功能仅仅是从摄像头获取一帧图像数据，并保存为<span>bmp格式的图像。这在实际运用中，一方面无法满足拍摄多张的需求，另一方面在嵌入式系统中也无法查看图片。为解决这些实际运用中的需求，借助于Shell Script帮助是一个好方法。</span></div>
+<div style="line-height: 18pt; text-indent: 21.75pt; layout-grid-mode: char">一开始，<span>Shell Script等待用户的键盘输入，读取后运用if语句来分别进行处理：当输入的是&ldquo;C&rdquo;时，进行拍摄的处理；当输入的是&ldquo;Q&rdquo;时，退出，停止运行。</span></div>
+<div style="line-height: 18pt; text-indent: 21.75pt; layout-grid-mode: char">在拍摄的处理当中，运行之前编写好的<span>C程序获得了一张bmp格式的图片，随后，即运用文件传输命令TFTP，将这张图片从嵌入式系统中传输到与之建立网络连接的一台PC机中。之后，又进入等待用户的键盘输入状态，再根据输入情况做下一步处理。</span></div>
+<div style="line-height: 18pt; text-indent: 21.75pt; layout-grid-mode: char">在<span>TFTP传输中，定义了一个变量作为在PC端图片的名字。它在每次传输后都会自增1，这样每次传输上来的文件名都不一样，因此不会引起覆盖之前图片的情况。</span></div>
+<div style="text-indent: -22.5pt; margin: 7.8pt 0cm 7.8pt 22.5pt; layout-grid-mode: char"><b><span>四、</span></b><b>结束语</b></div>
+<div style="line-height: 18pt; text-indent: 21pt">从以上的讨论可以看出，此方法简单可行，产生的图片效果也令人满意。同时，此方法与硬件的关联少，可以移植到任何提供<span>V4L2接口的linux嵌入式开发平台。另外，由于文中给出了获取原始图像信息的方法，故虽然仅描述了生成bmp24位位图的方法，但只要在获取原始数据后的处理中符合目标文件的格式要求，生成其他格式文件也是简单易行的。</span></div>
+<div style="layout-grid-mode: char">&nbsp;</div>
+<div>&nbsp;</div></div>
+    </td>
+</tr>
+</table>
+</div>
+<div class="erji2_right">
+<div class="erji_right_news">
+<div class="erji_right_news_title"><span class="more1"></span>技术</div>
+<div class="erji_right_news_list">
+<ul>
+<li ><a href="show.php?contentid=11821" title="巧妙选购 看视频会议迎战低碳">巧妙选购 看视频会议迎战低碳</a></li>
+<li ><a href="show.php?contentid=11808" title="简单易用功能强大 263企业会议详评">简单易用功能强大 263企业会议详评</a></li>
+<li ><a href="show.php?contentid=11797" title="大屏幕应用探讨">大屏幕应用探讨</a></li>
+<li ><a href="show.php?contentid=11770" title="上访者的心声：请让政府“在线”">上访者的心声：请让政府“在线”</a></li>
+<li ><a href="show.php?contentid=11722" title="性能、连通性、易管理性谱写新汉数字标牌播放器三部曲">性能、连通性、易管理性谱写新汉数字标牌播放器</a></li>
+<li ><a href="show.php?contentid=11721" title="商显新方案 LG B2B助阵杭州动漫广场">商显新方案 LG B2B助阵杭州动漫广场</a></li>
+<li ><a href="show.php?contentid=11720" title="奥图码教育会议型投影机市场火爆">奥图码教育会议型投影机市场火爆</a></li>
+<li ><a href="show.php?contentid=11719" title="基于RFID技术的仓储管理提货方案设计">基于RFID技术的仓储管理提货方案设计</a></li>
+<li ><a href="show.php?contentid=11718" title="电信领域视频传送系统性能测试研究">电信领域视频传送系统性能测试研究</a></li>
+<li ><a href="show.php?contentid=11715" title="智能电视或成三网融合破局利器 行业标准亟待确立">智能电视或成三网融合破局利器 行业标准亟待确</a></li>
+<li ><a href="show.php?contentid=11705" title="DWDM技术在专属城域网中的实践应用">DWDM技术在专属城域网中的实践应用</a></li>
+<li ><a href="show.php?contentid=11698" title="边缘融合在大屏显示领域优异表现">边缘融合在大屏显示领域优异表现</a></li>
+<li ><a href="show.php?contentid=11697" title="大屏幕液晶拼接正确调试方法解读">大屏幕液晶拼接正确调试方法解读</a></li>
+<li  style="border-bottom:none;"><a href="show.php?contentid=11696" title="DWDM技术在专属城域网中的实践应用">DWDM技术在专属城域网中的实践应用</a></li>
+</ul>
+</div>
+</div class="erji_right_news">
+<div class="erji_ads3"><script language="javascript" src="/data/js.php?id=25"></script></div>
+</div>
+</div>
+<!--二级主体/-->
+<!--友情链接-->
+<div class="yqlj">
+<div class="yqlj_left">友情链接</div>
+<div class="yqlj_right">
+<a href="http://www.baidu.com" target="_blank">天极网</a> |
+<a href="http://www.voipchina.cn" target="_blank">网络通信中国网</a> |
+<a href="http://www.saus.cn" target="_blank">大屏幕网</a> |
+<a href="http://www.94ec.com" target="_blank">指挥调度网</a> |
+<a href="http://www.c114.com.cn/" target="_blank">与风网</a> |
+</div>
+</div>
+<!--友情链接/-->
+</div class="contain">
+<div class="bottom">
+<div class="bottom_left"><img src="/templates/imges/logo_bottom.jpg" width="181" height="44"/></div>
+<div class="bottom_right">
+<a href="/show.php?contentid=7609">关于我们</a>  |  <a href="/show.php?contentid=7610">联系我们</a>  |   <a href="javascript:window.external.addFavorite('123.116.56.119','视频天空网')">加入收藏</a><br>
+<p>Copyright 2002-2007 www.videosky.com All Rights Reserved<br />
+版权所有平行空间（北京）广告有限公司 电话：010-67726982 传真：010-67726976<br />
+<span style="color: rgb(71, 71, 71); font-family: 宋体; line-height: 30px; text-align: -webkit-left; ">京ICP备11007696号-1</span>&nbsp;<br />
+&nbsp;</p>
+<style type="text/css">
+.bizmail_loginpanel{font-size:12px;width:300px;height:auto;border:1px solid #cccccc;background:#ffffff;}
+.bizmail_LoginBox{padding:10px 15px;}
+.bizmail_loginpanel h3{padding-bottom:5px;margin:0 0 5px 0;border-bottom:1px solid #cccccc;font-size:14px;}
+.bizmail_loginpanel form{margin:0;padding:0;}
+.bizmail_loginpanel input.text{font-size:12px;width:100px;height:20px;margin:0 2px;border:1px solid #C3C3C3;border-color:#7C7C7C #C3C3C3 #C3C3C3 #9A9A9A;}
+.bizmail_loginpanel .bizmail_column{height:28px;}
+.bizmail_loginpanel .bizmail_column label{display:block;float:left;width:30px;height:24px;line-height:24px;font-size:12px;}
+.bizmail_loginpanel .bizmail_column .bizmail_inputArea{float:left;width:240px;}
+.bizmail_loginpanel .bizmail_column span{font-size:12px;word-wrap:break-word;margin-left: 2px;line-height:200%;}
+.bizmail_loginpanel .bizmail_SubmitArea{margin-left:30px;clear:both;}
+.bizmail_loginpanel .bizmail_SubmitArea a{font-size:12px;margin-left:5px;}
+.bizmail_loginpanel select{width:110px;height:20px;margin:0 2px;}
+</style> <script type="text/javascript" src="http://exmail.qq.com/zh_CN/htmledition/js_biz/outerlogin.js"  charset="gb18030"></script> <script type="text/javascript">
+writeLoginPanel({domainlist:"videosky.com", mode:"vertical"});
+</script></div>
+</div></center>
+</body>
+</html>

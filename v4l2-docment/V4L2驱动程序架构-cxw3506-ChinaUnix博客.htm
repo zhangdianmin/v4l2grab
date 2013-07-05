@@ -1,0 +1,2221 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" type="text/css" href="/css/default/style.css" />
+<link rel="stylesheet" type="text/css" href="/css/qqface/qqFace.css" />
+<link rel="stylesheet" type="text/css" href="/css/asyncbox/skins/Chrome/asyncbox.css" />
+<link rel="stylesheet" type="text/css" href="/assets/6d60aeb8/pager.css" />
+<script type="text/javascript" src="/js/jquery.min.js"></script>
+<script type="text/javascript" src="/js/jquery.cookies.min.js"></script>
+<script type="text/javascript" src="/js/AsyncBox.v1.4.5.js"></script>
+<title>V4L2驱动程序架构-cxw3506-ChinaUnix博客</title>
+<meta name="description" content='1 V4L2简介 
+
+video4linux2(V4L2)是Linux内核中关于视频设备的内核驱动，它为Linux中视频设备访问提供了通用接口，在Linux系统中，V4L2驱动的Video设备节点路径通常/dev/video/中的vid'/>
+<script language="javascript">
+//用户是否在线
+var isOnLine = '';
+$(document).ready(function(){
+	var blog = {'name': '', 'name_url': '', 'brief': ''};
+	//消息通知显示和隐藏控制
+	$('#show_message_slide_button').hover(
+		function(){
+			$('#message_slide_div').slideDown(100);											   
+		},
+		function(){
+			
+		}
+	);
+
+	$('#message_slide_div').hover(
+		function(){
+			
+		},
+		function(){
+			$('#message_slide_div').slideUp(100);
+		}
+	);
+	
+	//编辑博客名
+	$('#editbna').click(function(){
+		blog.name = $('#bnaspan a').text();
+		var val = '<input id="bnainput" type="text" style="float:left" value="" rel="' +$(this).attr('rel') + '" /><input id="bnasub" type="button" style="float:left" class="btn1"><input id="bnacanl" type="button" style="float:left" class="btn2"><div class="clear"></div>';
+		$('#bnaspan').html(val);
+		$('#bnainput').val(blog.name);
+		$(this).parent().hide();
+	});
+	
+	$('#bnasub').live('click', function(){
+	    var rel = eval('({' + $('#bnainput').attr('rel') + '})');
+		var name = $('#bnainput').val();
+		if(name != blog.name){
+	        $.ajax({
+			    type: "POST",
+			    url: rel.url,	
+			    data: {
+				    'name' : name
+			    },
+			    success:function(data){
+				    if(data == 0){
+						$('#bnaspan').html(blog.name);
+						$('#bnaspan').html('<a href="' + rel.href + '">' + $('#bnaspan').html() + '</a>');
+				    }else{
+						$('#bnaspan').html(data);
+						$('#bnaspan').html('<a href="' + rel.href + '">' + $('#bnaspan').html() + '</a>');
+				    }
+					$('#editbna').parent().show();
+				}
+			});
+		}else{
+		    $('#bnaspan').text(blog.name).html();
+			$('#bnaspan').html('<a href="' + rel.href + '">' + $('#bnaspan').html() + '</a>');
+			$('#editbna').parent().show();
+		}
+	});
+	
+	$('#bnacanl').live('click', function(){
+		var rel = eval('({' + $('#bnainput').attr('rel') + '})');
+		$('#bnaspan').html('<a href="' + rel.href + '">' + blog.name + '</a>');
+		$('#editbna').parent().show();
+	});
+	
+	//编辑签名
+	$('#editbrief').click(function(){
+	    blog.brief = $('#briefem').text();
+		var val = '<input id="brfinput" type="text" style="float:left" value="" rel="' + $(this).attr('rel') + '" /><input id="brfsub" style="float:left"  type="button" class="btn1"><input style="float:left"  id="brfcanl" type="button" class="btn2"><div class="clear"></div>';
+		$('#briefem').html(val);
+		$('#brfinput').val(blog.brief);
+		$(this).parent().hide();
+	});
+	
+	$('#brfsub').live('click', function(){
+	    var url = $('#brfinput').attr('rel');
+		var brief = $('#brfinput').val();
+		if(brief != blog.brief){
+	        $.ajax({
+			    type: "POST",
+			    url: url,	
+			    data: {
+				    'brief' : brief
+			    },
+			    success:function(data){
+				    if(data == 0){
+				        $('#briefem').html(blog.brief);
+				    }else{
+						$('#briefem').html(data);
+				    }
+					$('#editbrief').parent().show();
+				}
+			});
+		}else{
+		    $('#briefem').text(blog.brief).html();
+			$('#editbrief').parent().show();
+		}
+	});
+	
+	$('#brfcanl').live('click', function(){
+		$('#briefem').html(blog.brief);
+		$('#editbrief').parent().show();
+	});
+
+});
+</script>
+</head>
+<body>
+<div class="box">
+  <!-- 一级导航 -->
+  <div class="Blog_nav1">
+    <div class="Blog_nav1_2"><a href="/"><img src="/image/default/1.png"></a><a href="http://www.chinaunix.net" class="Blog_a1">Chinaunix首页</a>　| 　<a href="http://bbs.chinaunix.net" target="_blank">论坛</a>　| 　<a href="http://blog.chinaunix.net" target="_blank">博客</a><span class="Blog_span1"></span>
+            <a href="/site/login.html" class="Blog_a1">登录</a> | <a href="http://sso.chinaunix.net/Register?return_url=http%3A%2F%2Ft.cublog.com%2F" class="Blog_a1">注册</a>
+          </div>
+	<!--自动提示层-->
+	<style>
+	.bor13221{border:1px #bbb solid;width:206px;position:absolute;top:34px;left:0;background:#fff; z-index:9999;display:none}
+	.bor13221 li{height:26px;line-height:26px;padding-left:6px;color:#555;font-size:14px;cursor:pointer;}
+	.here{background:#f3f3f3;}
+    </style>
+
+	<!--自动提示层-->
+    <div class="Blog_nav1_3" style="position:relative; z-index:9999;">
+	 <div class="bor13221">
+      <ul>
+      </ul>
+    </div>
+	  <form action='/site/search.html' method='post'>
+		<input type="text"  autocomplete="off"  class="Blog_txt1" id='search_input_id' name='keywords'>
+		<select class="Bolg_sel1" name='type' id='search_type_blog'>
+		  <option value='blog'>博文</option>
+		  <option value='author'>博主</option>
+		</select>
+		<input type="submit" value='' name='submit' class="Blog_btn1">
+	 </form>
+    </div>
+    <div class="clear"></div>
+    <div class="Blog_nav1_layer1" id="message_slide_div" style="display:none;">
+	    <ul>
+	    	<li><a href="/message/private.html">私人消息()</a></li>
+	    	<li><a href="/message/system.html">系统消息()</a></li>
+	    	<li><a href="/member/request.html">好友请求()</a></li>
+	    	<li><a href="/member/notification.html">通知管理()</a></li>
+	    </ul>
+    </div>
+  </div>
+   <script type="text/javascript">
+  	$(function(){
+		//点击添加进文本框
+		$(".bor13221 li").live( 'click' , function(e){
+			if ( e && e.stopPropagation )
+			{
+				//因此它支持W3C的stopPropagation()方法
+				e.stopPropagation();
+			}
+			else
+			{
+				//否则，我们需要使用IE的方式来取消事件冒泡
+				window.event.cancelBubble = true; 
+			}
+			$('#search_input_id').val($(this).text());
+			$(".bor13221 ul").html('');
+			$(".bor13221").hide();
+		});
+		$(".bor13221 ul li").live({
+			mouseenter:
+			function()
+			{
+				$(".bor13221 ul li").removeClass("here");
+				$(this).addClass('here');
+			},
+			mouseleave:
+			function()
+			{
+				$(".bor13221 ul li").removeClass("here");
+				$(this).removeClass('here');
+			}
+		});
+		//自动提示
+		$('#search_input_id').keyup(function(event){
+			//取消博主的提示
+			var search_type_blog = $('#search_type_blog').val();
+			if(search_type_blog == 'author') return false;
+
+			var key = $(this).val();
+			//获取键值
+			var keycode = event.which; //38 上 40 下
+			var count = $('.bor13221 ul li').length;
+			if(key != '' && keycode != 38 && keycode != 40)
+			{
+				$.getJSON("http://api.sou.it168.com/autoWenKuCloud?jsoncallback=?",{"ty":"json","offset":"0","limit":"10","q":key}, function(result)
+					{
+						var arr = result.data;
+
+						var html ='';
+						for (i=0;i<arr.length ;i++ )   
+						{   
+							html += '<li>'+arr[i]+'</li>';
+						} 
+						
+						$('.bor13221 ul').html(html);
+						(arr.length > 1) ?  $(".bor13221").show() : $(".bor13221").hide();
+					}
+				);
+			}
+			else if(keycode == 38)
+			{
+				if(count > 0)
+				{
+					//遍历li
+					var curr_li_num;
+					$('.bor13221 ul li').each(function(index , dom){
+						if($(dom).attr('class') == 'here')
+						{
+							curr_li_num = index;
+							return false;
+						}
+					}); 
+					var next_li_num;
+					if(typeof(curr_li_num) == 'undefined')
+					{
+						next_li_num = count - 1;
+					}
+					else
+					{
+						if(curr_li_num == 0)
+						{
+							next_li_num = count - 1;
+						}
+						else
+						{
+							next_li_num = curr_li_num - 1;
+						}
+					}
+					$(".bor13221 ul li").removeClass("here");
+					$(".bor13221 ul li:eq(" + next_li_num + ")").addClass("here");
+					$('#search_input_id').val($(".bor13221 ul li:eq(" + next_li_num + ")").text());
+				}
+			}
+			else if(keycode == 40)
+			{
+				if(count > 0)
+				{
+					//遍历li
+					var curr_li_num;
+					$('.bor13221 ul li').each(function(index , dom){
+						if($(dom).attr('class') == 'here')
+						{
+							curr_li_num = index;
+							return false;
+						}
+					}); 
+					var next_li_num;
+					if(typeof(curr_li_num) == 'undefined')
+					{
+						next_li_num = 0;
+					}
+					else
+					{
+						if(curr_li_num == count - 1)
+						{
+							next_li_num = 0;
+						}
+						else
+						{
+							next_li_num = curr_li_num + 1;
+						}
+					}
+					$(".bor13221 ul li").removeClass("here");
+					$(".bor13221 ul li:eq(" + next_li_num + ")").addClass("here");
+					$('#search_input_id').val($(".bor13221 ul li:eq(" + next_li_num + ")").text());
+				}
+			}
+		});
+		$(document).click(function(e){
+			$(".bor13221").hide();
+		});
+
+	});
+  </script>
+  <!-- 头 -->
+  <!-- 推荐博客-->
+  <div class="Blog_header1">
+	    <div class="Blog_header1_1">
+      <p class="Blog_p1" ><em><a href="/uid/26101960.html">cxw3506的ChinaUnix博客</a></em><!--<a href="#">gaoke.blog.chinaunix.net</a>--></p>
+      <p class="Blog_p2" style="color:#125A94">是该记录点东西了！</p>
+    </div>
+        <div class="Blog_header1_2" id="hide_div1">
+    	<span class="Blog_span3"></span>
+    	<div class="float_div1" style="white-space:nowrap;" onmouseover="javascript:isMove=false" onmouseout="javascript:isMove=true">
+	    <ul id="noticev2">  
+		    		    <li><a href="http://aijiake.com/album/66009" target="_blank">12间设计为民生公益展高清无码大图</a></li>
+		    		    <li><a href="http://blog.chinaunix.net/uid-24789255-id-3485443.html" target="_blank">【公布获奖】2-3月原创博文评选</a></li>
+		    		    <li><a href="http://blog.chinaunix.net/uid-24789255-id-3559246.html" target="_blank">2013第一季度“ChinaUnix博客之星”评选活动</a></li>
+		    	    </ul>
+	    </div>
+    </div>
+            <div class="Blog_header1_3"><a href="/uid/26101960.html">首页</a>　| 　<a href="/uid/26101960/abstract/1.html">博文目录</a>　| 　<a href="/member/profile/uid/26101960.html">关于我</a></div>
+  </div>
+    
+  <!-- 内容部分 -->
+  	<script type="text/javascript" src="/highlight/scripts/XRegExp.js"></script> <!-- XRegExp is bundled with the final shCore.js during build -->
+<script type="text/javascript" src="/highlight/scripts/shCore.js"></script>
+<script type="text/javascript" src="/highlight/scripts/shAutoloader.js"></script>
+<link type="text/css" rel="stylesheet" href="/highlight/styles/shCore.css"/>
+<link type="text/css" rel="Stylesheet" href="/highlight/styles/shThemeDefault.css" />
+<link href="/code/css/fck_editorarea.css" rel="stylesheet" type="text/css" />
+  <div class="Blog_contain"> 
+    <!-- 左 -->
+	<script language="javascript">
+$(document).ready(function(){
+	$('#ConcernBtn').bind('click',function(){
+			var cuid = '26101960';
+			var url =  '/member/concern.html';
+			var type = $(this).attr('rel');
+		
+			if(type == 'addConcern'){
+				$.ajax({
+					type : 'get',
+					url  : url,
+					data : {'op' : 'ajaxadd' , 'cuid' : cuid, 'random' : Math.random()},
+					success : function(msg){	
+					   if(msg == -1){
+						   showErrorMsg('参数错误！');
+					   } else if (msg == 0){
+						   showErrorMsg('关注失败，没有该用户！');
+					   } else if (msg == 1){
+						   showErrorMsg('关注失败，您已经关注了该用户！');
+					   } else if (msg == 2){
+						   $('#ConcernBtn').val('已关注');
+						   $('#ConcernBtn').attr('rel','delConcern');
+						   showSucceedMsg('关注成功!');
+					   } else if (msg == 3){
+						   showErrorMsg('未知错误');
+					   }
+					}
+				});	
+			} else if ( type == 'delConcern'){
+				$.ajax({
+					type : 'get',
+					url  : url,
+					data : {'op' : 'ajaxdel' , 'cuid' : cuid, 'random' : Math.random()},
+					success : function(msg){
+					   if(msg == 0){
+						   showErrorMsg('参数错误！','消息提示');
+					   } else if (msg == 1){
+						   showErrorMsg('操作失败，请尝试刷新页面重试！','消息提示');
+					   } else if (msg == 2){
+						   $('#ConcernBtn').val('加关注');
+						   $('#ConcernBtn').attr('rel','addConcern');
+						   showSucceedMsg('成功取消关注！','消息提示');
+					   } else if (msg == 3){
+						   showErrorMsg('未知错误！','消息提示'); 
+					   }
+					}
+				});	
+			}
+	});					   
+});
+
+//加好友
+function addFriend(fuid, url){
+	if(fuid == '' || fuid.length == 0){
+		showErrorMsg('缺少参数！','信息提示');
+		return false;
+	}
+	$.ajax({
+		   type : 'get',
+		   url : url,
+		   data : {'op' : 'add', 'fuid' : fuid , 'random' : Math.random()},
+		   success : function(msg){
+				if(msg == -1){
+					showErrorMsg('参数错误！','消息提示');
+				} else if (msg == -2){
+					showErrorMsg('添加好友失败,没有该用户的信息！','消息提示');
+				} else if (msg == -3){
+					showErrorMsg('添加好友失败,你不能添加自己为好友！','消息提示');
+				} else if (msg == -4){
+					showErrorMsg('添加好友未知错误,该错误已被记录！','消息提示');
+				} else if (msg == -5){
+					showErrorMsg('添加好友失败,你之前已经发送过好友请求,请耐心等待对方同意申请！','消息提示');
+				} else if (msg == -6){
+					showErrorMsg('添加好友失败,你们已经是好友了！','消息提示');
+				} else {
+					$.cover(true);
+					asyncbox.open({
+						id : 'addFriend',
+						title : '添加好友',
+						url : url,
+						data : {'op' : 'add', 'fuid' : fuid , 'random' : Math.random()},
+						width : 490,
+						height : 180,
+						scroll : 'no',
+						callback : function(action) {
+							if (action == 'close'){
+								$.cover(false);
+							}	
+						}
+					});	
+				}
+		   }
+	});	
+	
+}
+
+//发送短消息
+function postMessage(msguid, url){
+	if(msguid == '' || msguid.length == 0){
+		showErrorMsg('缺少参数！','信息提示');
+		return false;
+	}
+	
+	$.ajax({
+		   type : 'post',
+		   url : url,
+		   data : {'op' : 'ajaxpost', 'msguid' : msguid , 'random' : Math.random()},
+		   success : function(msg){
+				if(msg == -1){
+					showErrorMsg('发送失败，缺少收件人对象！','消息提示');
+				} else if(msg == -2){
+					showErrorMsg('发送失败，自己不能给自己发送短消息！','消息提示');
+				} else {
+					$.cover(true);
+					asyncbox.open({
+						id : 'postMessage',
+						title : '发送短消息',
+						url : url,
+						data : {'op' : 'ajaxpost', 'msguid' : msguid , 'random' : Math.random()},
+						width : 510,
+						height : 255,
+						scroll : 'no',
+						callback : function(action) {
+							if (action == 'close'){
+								$.cover(false);
+							}	
+						}
+					});	
+				}
+		   }
+	});	
+}
+
+</script>
+<div class="Blog_left">
+      <div class="Blog_left1 Blog_bg1">
+        <div class="Blog_left1_1">
+			<!-- 专家博客-->
+			<a href="/uid/26101960.html"><img src="http://passport.ixpub.net/data/avatar/026/10/19/60_avatar_middle.jpg" onerror="this.onerror=null;this.src='http://passport.ixpub.net/images/noavatar_middle.gif'" /></a>
+            <p><a href="/uid/26101960.html">cxw3506</a></p>
+        </div>
+        <ul class="Blog_ul1 Blog_noline1">
+          <li>博客访问： 11471 </li>
+          <li>博文数量： 22 </li>
+          <li>博客积分： 359 </li>
+          <!--<li>专家积分： 180</li>-->
+          <li>博客等级： 一等列兵 </li>
+		  <li>技术积分： 200 </li>
+          <li>用  户  组：  普通用户</li>
+          <li>注册时间： 2012-04-08 19:51 </li>
+          <li></li>
+        </ul>  
+        
+                <div class="HT_line3 HT_line3_1"></div>
+        <ul class="Blog_ul2">
+          <li><input type="button" value="加关注" id="ConcernBtn" onclick="showErrorMsg('操作失败,您需要先登录!', '消息提示', '/site/login.html')"></li>
+          <li><input type="button" value="短消息" id="postMessageBtn" onclick="showErrorMsg('操作失败,您需要先登录!', '消息提示', '/site/login.html')"></li>
+          <li><input type="button" value="论坛" onclick="location.href='http://bbs.chinaunix.net'"></li>
+          <li><input type="button" value="加好友" id="addFriendBtn" onclick="showErrorMsg('操作失败,您需要先登录!', '消息提示', '/site/login.html')"></li>
+        </ul>
+              </div>
+        
+         
+      <div class="Blog_left2 Blog_bg1">
+        <div class="Blog_tit1">文章分类</div>
+        <div class="Blog_left2_1">
+          <p class="Blog_p4"><a href="/uid/26101960/list/1.html">全部博文</a>（22）</p>
+          <ul id="blogCla">
+                            <li><a href="/uid/26101960/cid-156028-list-1.html" title="linux">linux</a>（13）
+                                </li>
+                            <li><a href="/uid/26101960/cid--1-list-1.html" title="未分配的博文">未分配的博文</a>（9）
+                                </li>
+                      </ul>
+        </div>
+      </div>
+                  <div class="Blog_left2 Blog_bg1">
+        <div class="Blog_tit1">文章存档</div>
+        <div class="Blog_left2_1" id="blogdtr">
+                    <p class="Blog_p4"><span class="Blog_jia1"></span><a href="/uid/26101960/year-2012-list-1.html">2012年</a>（22）</p>
+          <ul style="display:none;" class="Blog_ul3 zk">
+                        <li><a href="/uid/26101960/year-201209-list-1.html">2012年09月</a>（1）</li>
+                        <li><a href="/uid/26101960/year-201208-list-1.html">2012年08月</a>（1）</li>
+                        <li><a href="/uid/26101960/year-201206-list-1.html">2012年06月</a>（1）</li>
+                        <li><a href="/uid/26101960/year-201205-list-1.html">2012年05月</a>（3）</li>
+                        <li><a href="/uid/26101960/year-201204-list-1.html">2012年04月</a>（16）</li>
+                      </ul>
+                  </div>
+      </div>
+            <div class="Blog_left2 Blog_bg1">
+        <div class="Blog_tit1">我的朋友</div>
+        <ul class="Blog_ul4">
+                    <li><a href="/uid/26883435.html"><img src="http://passport.ixpub.net/data/avatar/026/88/34/35_avatar_small.jpg" onerror="this.onerror=null;this.src='http://passport.ixpub.net/images/noavatar_small.gif'" /></a>
+            <p><a href="/uid/26883435.html" title="819073435">81907343</a></p>
+          </li>
+                  </ul>
+      </div>
+      <div class="Blog_left2 Blog_bg1">
+        <div class="Blog_tit1">最近访客</div>
+        <ul class="Blog_ul4">
+                    <li><a href="/uid/22028566.html"><img src="http://passport.ixpub.net/data/avatar/022/02/85/66_avatar_small.jpg" onerror="this.onerror=null;this.src='http://passport.ixpub.net/images/noavatar_small.gif'" /></a>
+            <p><a href="/uid/22028566.html" title="幸福软件公司">幸福软件</a></p>
+          </li>
+                    <li><a href="/uid/28391201.html"><img src="http://passport.ixpub.net/data/avatar/028/39/12/01_avatar_small.jpg" onerror="this.onerror=null;this.src='http://passport.ixpub.net/images/noavatar_small.gif'" /></a>
+            <p><a href="/uid/28391201.html" title="Ubuntu_one">Ubuntu_o</a></p>
+          </li>
+                    <li><a href="/uid/28811392.html"><img src="http://passport.ixpub.net/data/avatar/028/81/13/92_avatar_small.jpg" onerror="this.onerror=null;this.src='http://passport.ixpub.net/images/noavatar_small.gif'" /></a>
+            <p><a href="/uid/28811392.html" title="rxlinux">rxlinux</a></p>
+          </li>
+                    <li><a href="/uid/27197466.html"><img src="http://passport.ixpub.net/data/avatar/027/19/74/66_avatar_small.jpg" onerror="this.onerror=null;this.src='http://passport.ixpub.net/images/noavatar_small.gif'" /></a>
+            <p><a href="/uid/27197466.html" title="bluefishing">bluefish</a></p>
+          </li>
+                    <li><a href="/uid/27149096.html"><img src="http://passport.ixpub.net/data/avatar/027/14/90/96_avatar_small.jpg" onerror="this.onerror=null;this.src='http://passport.ixpub.net/images/noavatar_small.gif'" /></a>
+            <p><a href="/uid/27149096.html" title="xkcp0324">xkcp0324</a></p>
+          </li>
+                    <li><a href="/uid/28819210.html"><img src="http://passport.ixpub.net/data/avatar/028/81/92/10_avatar_small.jpg" onerror="this.onerror=null;this.src='http://passport.ixpub.net/images/noavatar_small.gif'" /></a>
+            <p><a href="/uid/28819210.html" title="complicated1989">complica</a></p>
+          </li>
+                    <li><a href="/uid/26942706.html"><img src="http://passport.ixpub.net/data/avatar/026/94/27/06_avatar_small.jpg" onerror="this.onerror=null;this.src='http://passport.ixpub.net/images/noavatar_small.gif'" /></a>
+            <p><a href="/uid/26942706.html" title="huhuwang724116">huhuwang</a></p>
+          </li>
+                    <li><a href="/uid/28695135.html"><img src="http://passport.ixpub.net/data/avatar/028/69/51/35_avatar_small.jpg" onerror="this.onerror=null;this.src='http://passport.ixpub.net/images/noavatar_small.gif'" /></a>
+            <p><a href="/uid/28695135.html" title="rwlcc">rwlcc</a></p>
+          </li>
+                    <li><a href="/uid/26765074.html"><img src="http://passport.ixpub.net/data/avatar/026/76/50/74_avatar_small.jpg" onerror="this.onerror=null;this.src='http://passport.ixpub.net/images/noavatar_small.gif'" /></a>
+            <p><a href="/uid/26765074.html" title="xinyuwuxian">xinyuwux</a></p>
+          </li>
+                  </ul>
+      </div>
+      <div class="Blog_left2 Blog_bg1">
+        <div class="Blog_tit1">订阅</div>
+        <ul class="Blog_ul5">
+          <li><a href="/blog/rss/uid/26101960.html" class="Blog_a4"></a></li>
+          <li><a href="http://www.google.com/ig/add?feedurl=http%3A%2F%2Fblog.chinaunix.net%2Fuid%2F26101960.html" class="Blog_a5"></a></li>
+        </ul>
+      </div>
+      <div class="Blog_left2 Blog_left3 Blog_bg1">
+        <div class="Blog_tit1">推荐博文</div>
+        <ul class="Blog_ul6">
+				  			<li>·<a href="/uid-26896862-id-3662188.html" title="数据库安全--案例篇">数据库安全--案例篇</a></li>
+		  			<li>·<a href="/uid-335480-id-3658884.html" title="一次配置DATAGUARD BROKER 的测试小结">一次配置DATAGUARD BROKER 的...</a></li>
+		  			<li>·<a href="/uid-26782506-id-3659184.html" title="简单的命令行词典">简单的命令行词典</a></li>
+		  			<li>·<a href="/uid-608135-id-3659448.html" title="Python 数据结构">Python 数据结构</a></li>
+		  			<li>·<a href="/uid-608135-id-3659510.html" title="Python 调试">Python 调试</a></li>
+		  		        </ul>
+      </div>
+      <div class="Blog_left2 Blog_left3 Blog_bg1">
+        <div class="Blog_tit1">热词专题</div>
+        <ul class="Blog_ul6">
+                        <li >·<a href="http://blog.chinaunix.net/zhuanti/101151/rj45qudongdianlu_1011508754.shtml" target='blank' title='rj45 驱动电路'>rj45 驱动电路</a></li>
+                        <li >·<a href="http://blog.chinaunix.net/zhuanti/101152/androidduizhanxinxi_1011516988.shtml" target='blank' title='android 堆栈信息'>android 堆栈信息</a></li>
+                        <li >·<a href="http://blog.chinaunix.net/zhuanti/101164/SIGSEGVSegmentationfault_1011632497.shtml" target='blank' title='SIGSEGVSegmentation fault'>SIGSEGVSegmentation fault</a></li>
+                        <li >·<a href="http://blog.chinaunix.net/zhuanti/101162/hafumanbianma_1011613014.shtml" target='blank' title='哈夫曼编码'>哈夫曼编码</a></li>
+                        <li class="no_line1">·<a href="http://blog.chinaunix.net/zhuanti/101162/xpanddsdmscrum_1011612575.shtml" target='blank' title='xp and dsdm scrum'>xp and dsdm scrum</a></li>
+                  </ul>
+      </div>
+
+      <div class="Blog_left2 Blog_left3 Blog_bg1">
+        <div class="Blog_tit1">友情链接</div>
+        <ul class="Blog_ul6">
+                  </ul>
+      </div>
+
+
+	</div>
+<script language="javascript">
+$(document).ready(function(){
+    /*目录树JS效果*/
+	$('#blogCla li > span').click(function(){
+		var cla = $(this).attr('class');
+		if(cla == 'Blog_jia1'){
+			//$('#blogCla li > span').removeClass('Blog_jian1').addClass('Blog_jia1');
+			//$('#blogCla li > .zk').css('display', 'none');
+				
+			$(this).removeClass('Blog_jia1').addClass('Blog_jian1');
+            $(this).parent().children('.zk').css('display', 'block');
+		}else{
+			$(this).removeClass('Blog_jian1').addClass('Blog_jia1');
+            $(this).parent().children('.zk').css('display', 'none');
+		}
+	});
+		
+	$('#blogdtr > p > span').click(function(){
+		var cla = $(this).attr('class');
+		if(cla == 'Blog_jia1'){
+			//$('#blogdtr > .Blog_p4 > span').removeClass('Blog_jian1').addClass('Blog_jia1');
+			//$('#blogdtr ul').css('display', 'none');
+				
+			$(this).removeClass('Blog_jia1').addClass('Blog_jian1');
+            $(this).parent().next().css('display', 'block');
+		}else{
+			$(this).removeClass('Blog_jian1').addClass('Blog_jia1');
+            $(this).parent().next().css('display', 'none');
+		}
+	});
+});
+</script>    <!-- 右 -->
+    <div class="Blog_right1">
+      <div class="Blog_right1_1 Blog_right1_11">
+        <div class="Blog_right1_2 ">
+			<!--推荐博文-->
+          <div class="Blog_tit4 Blog_tit5">
+                        <b class="Blog_b2"></b>
+            <a href="/uid-26101960-id-3297657.html">V4L2驱动程序架构</a>
+            <em>2012-08-02 10:19:44</em>
+          </div>
+          <div class="Blog_con2">
+            <div class="Blog_con3">
+              <p>分类： <span>嵌入式</span></p>
+			                </p>
+            </div>
+           <div class="Blog_wz1" style='word-wrap: break-word;'>
+			<DIV><SPAN style="FONT-FAMILY: 宋体; FONT-SIZE: 22pt">1 V4L2<SPAN style="FONT-FAMILY: 宋体">简介</SPAN></SPAN><SPAN style="FONT-FAMILY: 宋体; FONT-SIZE: 22pt"></SPAN> </DIV>
+<P></P>
+<P style="BORDER-BOTTOM-STYLE: none; PADDING-BOTTOM: 1pt; MARGIN-TOP: 3pt; TEXT-INDENT: 21pt; PADDING-LEFT: 0pt; PADDING-RIGHT: 0pt; BORDER-TOP-STYLE: none; MARGIN-BOTTOM: 3pt; PADDING-TOP: 1pt" class=p0><SPAN style="FONT-FAMILY: 宋体; FONT-SIZE: 12pt">video4linux2(V4L2)是Linux内核中关于视频设备的内核驱动，它为Linux中视频设备访问提供了通用接口，在Linux系统中，V4L2驱动的Video设备节点路径通常/dev/video/中的videoX</SPAN><SPAN style="FONT-FAMILY: 宋体; FONT-SIZE: 12pt"><BR></SPAN><SPAN style="FONT-FAMILY: 宋体; FONT-SIZE: 12pt">V4L2驱动对用户空间提供字符设备，主设备号为81，对于视频设备，其次设备号为0-63。除此之外，次设备号为64-127的Radio设备，次设备号为192-223的是Teletext设备</SPAN><SPAN style="FONT-FAMILY: 宋体; FONT-SIZE: 12pt">,</SPAN><SPAN style="FONT-FAMILY: 宋体; FONT-SIZE: 12pt">次设备号为224-255的是VBI设备</SPAN><SPAN style="FONT-FAMILY: 宋体; FONT-SIZE: 12pt"><BR></SPAN><SPAN style="FONT-FAMILY: 宋体; FONT-SIZE: 12pt">V4L2驱动的Video设备在用户空间通过各种ioctl调用进行控制，并且可以使用mmap进行内存映射</SPAN><SPAN style="FONT-FAMILY: 宋体; FONT-SIZE: 12pt"></SPAN></P>
+<DIV>1.1&nbsp;V4L2<SPAN style="FONT-FAMILY: 黑体">驱动主要使用的</SPAN><SPAN style="FONT-FAMILY: Arial">ioctl</SPAN> </DIV>
+<P>命令值如下所示：<SPAN><SPAN><BR></P>
+<DIV class="dp-highlighter bg_csharp">
+<DIV class=bar>
+<DIV class=tools>
+<DIV>
+<DIV class=codeheads>
+<P>点击(<SPAN style="COLOR: red; CURSOR: pointer" onclick="code_hide('code937')">此处</SPAN>)折叠或打开</P></DIV>
+<DIV id=code937 class=codeText>
+<OL style="MARGIN: 0px 1px 0px 0px; PADDING-LEFT: 40px" class=dp-css>
+<LI><SPAN style="COLOR: #000000">#define VIDIOC_QUERYCAP _IOR<SPAN style="COLOR: #0000cc">(</SPAN><SPAN style="COLOR: #0000cc">'</SPAN>V<SPAN style="COLOR: #0000cc">'</SPAN><SPAN style="COLOR: #0000cc">,</SPAN> 0<SPAN style="COLOR: #0000cc">,</SPAN> struct v4l2_capability<SPAN style="COLOR: #0000cc">)</SPAN> <SPAN style="COLOR: #0000cc">/</SPAN><SPAN style="COLOR: #0000cc">*</SPAN>查询能力<SPAN style="COLOR: #0000cc">*</SPAN><SPAN style="COLOR: #0000cc">/</SPAN><BR></LI>
+<LI>#define VIDIO_G_FMT _IOWR<SPAN style="COLOR: #0000cc">(</SPAN><SPAN style="COLOR: #0000cc">'</SPAN>V<SPAN style="COLOR: #0000cc">'</SPAN><SPAN style="COLOR: #0000cc">,</SPAN> 4<SPAN style="COLOR: #0000cc">,</SPAN> struct v4l2_format<SPAN style="COLOR: #0000cc">)</SPAN> <SPAN style="COLOR: #0000cc">/</SPAN><SPAN style="COLOR: #0000cc">*</SPAN>获得格式<SPAN style="COLOR: #0000cc">*</SPAN><SPAN style="COLOR: #0000cc">/</SPAN><BR></LI>
+<LI>#define VIDIOC_S_FMT _IOWR<SPAN style="COLOR: #0000cc">(</SPAN><SPAN style="COLOR: #0000cc">'</SPAN>V<SPAN style="COLOR: #0000cc">'</SPAN><SPAN style="COLOR: #0000cc">,</SPAN> 5<SPAN style="COLOR: #0000cc">,</SPAN> struct v4l2_format<SPAN style="COLOR: #0000cc">)</SPAN> <SPAN style="COLOR: #0000cc">/</SPAN><SPAN style="COLOR: #0000cc">*</SPAN>设置格式<SPAN style="COLOR: #0000cc">*</SPAN><SPAN style="COLOR: #0000cc">/</SPAN><BR></LI>
+<LI>#define VIDIOC_REQBUFS _IOWR<SPAN style="COLOR: #0000cc">(</SPAN><SPAN style="COLOR: #0000cc">'</SPAN>V<SPAN style="COLOR: #0000cc">'</SPAN><SPAN style="COLOR: #0000cc">,</SPAN> 8<SPAN style="COLOR: #0000cc">,</SPAN> strut v4l2_requestbuffers<SPAN style="COLOR: #0000cc">)</SPAN> <SPAN style="COLOR: #0000cc">/</SPAN><SPAN style="COLOR: #0000cc">*</SPAN>申请内存<SPAN style="COLOR: #0000cc">*</SPAN><SPAN style="COLOR: #0000cc">/</SPAN><BR></LI>
+<LI>#define VIDIOC_G_FBUF _IOW<SPAN style="COLOR: #0000cc">(</SPAN><SPAN style="COLOR: #0000cc">'</SPAN>V<SPAN style="COLOR: #0000cc">'</SPAN><SPAN style="COLOR: #0000cc">,</SPAN> 10<SPAN style="COLOR: #0000cc">,</SPAN> struct v4l2_framebuffer<SPAN style="COLOR: #0000cc">)</SPAN> <SPAN style="COLOR: #0000cc">/</SPAN><SPAN style="COLOR: #0000cc">*</SPAN>获得Framebuffer<SPAN style="COLOR: #0000cc">*</SPAN><SPAN style="COLOR: #0000cc">/</SPAN><BR></LI>
+<LI>#define VIDIOC_S_BUF _IOW<SPAN style="COLOR: #0000cc">(</SPAN><SPAN style="COLOR: #0000cc">'</SPAN>V<SPAN style="COLOR: #0000cc">'</SPAN><SPAN style="COLOR: #0000cc">,</SPAN> 11<SPAN style="COLOR: #0000cc">,</SPAN> struct v4l2_framebuffer<SPAN style="COLOR: #0000cc">)</SPAN> <SPAN style="COLOR: #0000cc">/</SPAN><SPAN style="COLOR: #0000cc">*</SPAN>设置Framebuffer<SPAN style="COLOR: #0000cc">*</SPAN><SPAN style="COLOR: #0000cc">/</SPAN><BR></LI>
+<LI>#define VIDIOC_OVERLAY _IOW<SPAN style="COLOR: #0000cc">(</SPAN><SPAN style="COLOR: #0000cc">'</SPAN>V<SPAN style="COLOR: #0000cc">'</SPAN><SPAN style="COLOR: #0000cc">,</SPAN> 14<SPAN style="COLOR: #0000cc">,</SPAN> <SPAN style="COLOR: #ff0000">int</SPAN><SPAN style="COLOR: #0000cc">)</SPAN> <SPAN style="COLOR: #0000cc">/</SPAN><SPAN style="COLOR: #0000cc">*</SPAN>设置Overlay<SPAN style="COLOR: #0000cc">*</SPAN><SPAN style="COLOR: #0000cc">/</SPAN><BR></LI>
+<LI>#define VIDIOC_QBUF _IOWR<SPAN style="COLOR: #0000cc">(</SPAN><SPAN style="COLOR: #0000cc">'</SPAN>V<SPAN style="COLOR: #0000cc">'</SPAN><SPAN style="COLOR: #0000cc">,</SPAN> 15<SPAN style="COLOR: #0000cc">,</SPAN> struct v4l2_buffer<SPAN style="COLOR: #0000cc">)</SPAN> <SPAN style="COLOR: #0000cc">/</SPAN><SPAN style="COLOR: #0000cc">*</SPAN>将内存加入队列<SPAN style="COLOR: #0000cc">*</SPAN><SPAN style="COLOR: #0000cc">/</SPAN><BR></LI>
+<LI>#define VIDIOC_DQBUF _IOWR<SPAN style="COLOR: #0000cc">(</SPAN><SPAN style="COLOR: #0000cc">'</SPAN>V<SPAN style="COLOR: #0000cc">'</SPAN><SPAN style="COLOR: #0000cc">,</SPAN> 17<SPAN style="COLOR: #0000cc">,</SPAN> strut v4l2_buffer<SPAN style="COLOR: #0000cc">)</SPAN> <SPAN style="COLOR: #0000cc">/</SPAN><SPAN style="COLOR: #0000cc">*</SPAN>从队列取出内存<SPAN style="COLOR: #0000cc">*</SPAN><SPAN style="COLOR: #0000cc">/</SPAN><BR></LI>
+<LI>#define VIDIOC_STREAMON _IOW<SPAN style="COLOR: #0000cc">(</SPAN><SPAN style="COLOR: #0000cc">'</SPAN>V<SPAN style="COLOR: #0000cc">'</SPAN><SPAN style="COLOR: #0000cc">,</SPAN> 18<SPAN style="COLOR: #0000cc">,</SPAN> <SPAN style="COLOR: #ff0000">int</SPAN><SPAN style="COLOR: #0000cc">)</SPAN> <SPAN style="COLOR: #0000cc">/</SPAN><SPAN style="COLOR: #0000cc">*</SPAN>开始流<SPAN style="COLOR: #0000cc">*</SPAN><SPAN style="COLOR: #0000cc">/</SPAN><BR></LI>
+<LI>#define VIDIOC_STREAMOFF _IOW<SPAN style="COLOR: #0000cc">(</SPAN><SPAN style="COLOR: #0000cc">'</SPAN>V<SPAN style="COLOR: #0000cc">'</SPAN><SPAN style="COLOR: #0000cc">,</SPAN> 19<SPAN style="COLOR: #0000cc">,</SPAN> <SPAN style="COLOR: #ff0000">int</SPAN><SPAN style="COLOR: #0000cc">)</SPAN> <SPAN style="COLOR: #0000cc">/</SPAN><SPAN style="COLOR: #0000cc">*</SPAN>停止流<SPAN style="COLOR: #0000cc">*</SPAN><SPAN style="COLOR: #0000cc">/</SPAN><BR></LI>
+<LI>#define VIDIOC_G_CTRL _IOWR<SPAN style="COLOR: #0000cc">(</SPAN><SPAN style="COLOR: #0000cc">'</SPAN>V<SPAN style="COLOR: #0000cc">'</SPAN><SPAN style="COLOR: #0000cc">,</SPAN> 27<SPAN style="COLOR: #0000cc">,</SPAN> struct v4l2_control<SPAN style="COLOR: #0000cc">)</SPAN> <SPAN style="COLOR: #0000cc">/</SPAN><SPAN style="COLOR: #0000cc">*</SPAN>得到控制<SPAN style="COLOR: #0000cc">*</SPAN><SPAN style="COLOR: #0000cc">/</SPAN><BR></LI>
+<LI>#define VIDIOC_S_CTRL _IOWR<SPAN style="COLOR: #0000cc">(</SPAN><SPAN style="COLOR: #0000cc">'</SPAN>V<SPAN style="COLOR: #0000cc">'</SPAN><SPAN style="COLOR: #0000cc">,</SPAN> 28<SPAN style="COLOR: #0000cc">,</SPAN> struct v4l2_control<SPAN style="COLOR: #0000cc">)</SPAN> <SPAN style="COLOR: #0000cc">/</SPAN><SPAN style="COLOR: #0000cc">*</SPAN>设置控制<SPAN style="COLOR: #0000cc">*</SPAN><SPAN style="COLOR: #0000cc">/</SPAN></SPAN></LI></OL></DIV></DIV><BR>&nbsp;</SPAN></SPAN><FONT size=4>1.2&nbsp;<SPAN style="FONT-FAMILY: 黑体">重要结构</SPAN></FONT></DIV></DIV></DIV>
+<P></P>
+<P>头文件&nbsp;<SPAN style="FONT-FAMILY: Times New Roman">include/linux/videodev2.h</SPAN></P>
+<P>include/media/v4l2-dev.h</P>
+<P>V4L2<SPAN style="FONT-FAMILY: 宋体">驱动核心实现文件：</SPAN><SPAN style="FONT-FAMILY: Times New Roman">driver/media/video/v4l2-dev.c</SPAN></P>
+<P>v4l2-dev.h<SPAN style="FONT-FAMILY: 宋体">中定义的</SPAN><SPAN style="FONT-FAMILY: Times New Roman">video_device</SPAN><SPAN style="FONT-FAMILY: 宋体">是</SPAN><SPAN style="FONT-FAMILY: Times New Roman">V4L2</SPAN><SPAN style="FONT-FAMILY: 宋体">驱动程序的核心数据结构</SPAN></P>
+<DIV class="dp-highlighter bg_csharp">
+<OL class=dp-c>
+<LI class=alt><SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;video_device&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>{&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>const</FONT></STRONG></SPAN><SPAN>&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_file_operations&nbsp;*fops;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;cdev&nbsp;*cdev;</SPAN><SPAN class=comment><FONT color=#008200>//字符设备 </FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;device&nbsp;*parent;</SPAN><SPAN class=comment><FONT color=#008200>//父设备 </FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_device&nbsp;*v4l2_dev;</SPAN><SPAN class=comment><FONT color=#008200>//父v4l2_device </FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>char</FONT></STRONG></SPAN><SPAN>&nbsp;name[32];</SPAN><SPAN class=comment><FONT color=#008200>//名称 </FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;vfl_type;</SPAN><SPAN class=comment><FONT color=#008200>//类型 </FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;minor;</SPAN><SPAN class=comment><FONT color=#008200>//次设备号 </FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=comment><FONT color=#008200>/*释放回调*/</FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>void</FONT></STRONG></SPAN><SPAN>&nbsp;(*release)(</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;video_device&nbsp;*vdev);&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=comment><FONT color=#008200>/*ioctl回调*/</FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>const</FONT></STRONG></SPAN><SPAN>&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_ioctl_ops&nbsp;*ioctl_ops;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>}&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>常用的结构&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>参见/include/linux/videodev2.h&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>1)设备能力结构&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_capability&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>{&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;__u8&nbsp;driver[16];</SPAN><SPAN class=comment><FONT color=#008200>//驱动名 </FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;__u8&nbsp;card[32];</SPAN><SPAN class=comment><FONT color=#008200>//例如Hauppauge&nbsp;winTV </FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;__u8&nbsp;bus_info[32];</SPAN><SPAN class=comment><FONT color=#008200>//PCI总线信息 </FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;__u32&nbsp;version;</SPAN><SPAN class=comment><FONT color=#008200>//内核版本 </FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;__u32&nbsp;capabilities;</SPAN><SPAN class=comment><FONT color=#008200>//设备能力 </FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;__u32&nbsp;reserved[4];&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>};&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>2)数据格式结构&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_format&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>{&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>enum</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_buf_type&nbsp;type;</SPAN><SPAN class=comment><FONT color=#008200>//本结构的数据类型 </FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>};&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>3)像素格式结构&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_pix_format&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>{&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;__u32&nbsp;&nbsp;&nbsp;width;</SPAN><SPAN class=comment><FONT color=#008200>//宽度 </FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;__u32&nbsp;&nbsp;&nbsp;height;</SPAN><SPAN class=comment><FONT color=#008200>//高度 </FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>}&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>4)请求缓冲&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_requestbuffers&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>{&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;__u32&nbsp;&nbsp;&nbsp;count;</SPAN><SPAN class=comment><FONT color=#008200>//缓存数量 </FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>enum</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_buf_type&nbsp;type;</SPAN><SPAN class=comment><FONT color=#008200>//数据流类型 </FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>}&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>5)数据流类型包括V4L2_MEMORY_MMAP和V4L2_MEMORY_USERPTR&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>enum</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_memory{&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>};&nbsp;&nbsp;</SPAN></LI></OL></DIV>
+<DIV><BR>
+<DIV>
+<DIV class=codeheads>
+<P>点击(<SPAN style="COLOR: red; CURSOR: pointer" onclick="code_hide('code421')">此处</SPAN>)折叠或打开</P></DIV></DIV><BR></DIV>
+<DIV>5)数据流类型包括V4L2_MEMORY_MMAP和V4L2_MEMORY_USERPTR enum v4l2_memory{ };</DIV>
+<DIV><BR>2&nbsp;V4L2<SPAN style="FONT-FAMILY: 宋体">驱动注册</SPAN> 2.1&nbsp;video_register_device </DIV>
+<P>video4linux2<SPAN style="FONT-FAMILY: 宋体">驱动程序的注册</SPAN><SPAN style="FONT-FAMILY: Times New Roman">drivers/media/video</SPAN></P>
+<P>video_register_device<SPAN style="FONT-FAMILY: 宋体">函数用来注册一个</SPAN><SPAN style="FONT-FAMILY: Times New Roman">v4l</SPAN><SPAN style="FONT-FAMILY: 宋体">驱动程序</SPAN></P>
+<DIV class="dp-highlighter bg_csharp">
+<OL class=dp-c>
+<LI class=alt><SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;video_register_device(</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;video_device&nbsp;*vdev,&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;type,&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;nr)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>{&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>return</FONT></STRONG></SPAN><SPAN>&nbsp;__video_register_device(vdev,&nbsp;type,&nbsp;nr,&nbsp;1);&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>}&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>其中参数type支持的类型如下 </SPAN><SPAN class=preprocessor></SPAN>&nbsp;</SPAN></LI>
+<LI><SPAN><SPAN class=preprocessor>#define&nbsp;VFL_TYPE_GRABBER&nbsp;0//视频 </SPAN><SPAN class=preprocessor></SPAN>&nbsp;</SPAN></LI>
+<LI class=alt><SPAN><SPAN class=preprocessor>#define&nbsp;VFL_TYPE_VBI&nbsp;&nbsp;&nbsp;&nbsp;1//从视频消隐的时间取得信息的设备 </SPAN><SPAN class=preprocessor></SPAN>&nbsp;</SPAN></LI>
+<LI><SPAN><SPAN class=preprocessor>#define&nbsp;VFL_TYPE_RADIO&nbsp;&nbsp;2&nbsp;//广播 </SPAN><SPAN class=preprocessor></SPAN>&nbsp;</SPAN></LI>
+<LI class=alt><SPAN><SPAN class=preprocessor>#define&nbsp;VFL_TYPE_VTX&nbsp;&nbsp;&nbsp;&nbsp;3//视传设备 </SPAN><SPAN class=preprocessor></SPAN>&nbsp;</SPAN></LI>
+<LI><SPAN><SPAN class=preprocessor>#define&nbsp;VFL_TYPE_MAX&nbsp;&nbsp;&nbsp;&nbsp;4//最大值 </SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>-----------------&gt;返回调用&nbsp;__video_register_device()&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>__video_register_device&nbsp;函数先检查设备类型，接下来&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>寻找一个可用的子设备号，最后注册相应的字符设备&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>static</FONT></STRONG></SPAN><SPAN>&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;__video_register_device(</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;video_device&nbsp;*vdev,&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;type,&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;nr,&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;warn_if_nr_in_use)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>{&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>switch</FONT></STRONG></SPAN><SPAN>&nbsp;(type)&nbsp;{&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>case</FONT></STRONG></SPAN><SPAN>&nbsp;VFL_TYPE_GRABBER:&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;minor_offset&nbsp;=&nbsp;0;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;minor_cnt&nbsp;=&nbsp;64;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>break</FONT></STRONG></SPAN><SPAN>;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>case</FONT></STRONG></SPAN><SPAN>&nbsp;VFL_TYPE_RADIO:&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;minor_offset&nbsp;=&nbsp;64;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;minor_cnt&nbsp;=&nbsp;64;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>break</FONT></STRONG></SPAN><SPAN>;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>case</FONT></STRONG></SPAN><SPAN>&nbsp;VFL_TYPE_VTX:&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;minor_offset&nbsp;=&nbsp;192;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;minor_cnt&nbsp;=&nbsp;32;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>break</FONT></STRONG></SPAN><SPAN>;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>case</FONT></STRONG></SPAN><SPAN>&nbsp;VFL_TYPE_VBI:&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;minor_offset&nbsp;=&nbsp;224;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;minor_cnt&nbsp;=&nbsp;32;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>break</FONT></STRONG></SPAN><SPAN>;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;nr&nbsp;=&nbsp;devnode_find(vdev,&nbsp;nr&nbsp;==&nbsp;-1&nbsp;?&nbsp;0&nbsp;:&nbsp;nr,&nbsp;minor_cnt);&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;nr&nbsp;=&nbsp;devnode_find(vdev,&nbsp;nr&nbsp;==&nbsp;-1&nbsp;?&nbsp;0&nbsp;:&nbsp;nr,&nbsp;minor_cnt);&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;vdev-&gt;cdev-&gt;ops&nbsp;=&nbsp;&amp;v4l2_fops;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN></SPAN><SPAN class=comment><FONT color=#008200>//注册字符设备 </FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>ret&nbsp;=&nbsp;cdev_add(vdev-&gt;cdev,&nbsp;MKDEV(VIDEO_MAJOR,&nbsp;vdev-&gt;minor),&nbsp;1);&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;ret&nbsp;=&nbsp;device_register(&amp;vdev-&gt;dev);&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN></SPAN><SPAN class=comment><FONT color=#008200>//注册完毕设备信息存储在video_device数组中 </FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;mutex_lock(&amp;videodev_lock);&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;video_device[vdev-&gt;minor]&nbsp;=&nbsp;vdev;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;mutex_unlock(&amp;videodev_lock);&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>}&nbsp;&nbsp;</SPAN></LI></OL></DIV>
+<DIV>int video_register_device(struct video_device *vdev, int type, int nr) </DIV>
+<DIV>{ </DIV>
+<DIV>return __video_register_device(vdev, type, nr, 1); </DIV>
+<DIV>} </DIV>
+<DIV>其中参数type支持的类型如下 </DIV>
+<DIV>#define VFL_TYPE_GRABBER 0//视频 </DIV>
+<DIV>#define VFL_TYPE_VBI 1//从视频消隐的时间取得信息的设备 </DIV>
+<DIV>#define VFL_TYPE_RADIO 2 //广播 </DIV>
+<DIV>#define VFL_TYPE_VTX 3//视传设备 </DIV>
+<DIV>#define VFL_TYPE_MAX 4//最大值</DIV>
+<DIV>&nbsp;-----------------&gt;返回调用 __video_register_device() __video_register_device 函数先检查设备类型，接下来寻找一个可用的子设备号，</DIV>
+<DIV>最后注册相应的字符设备 </DIV>
+<DIV><BR>
+<DIV>
+<DIV class=codeheads>
+<P>点击(<SPAN style="COLOR: red; CURSOR: pointer" onclick="code_hide('code750')">此处</SPAN>)折叠或打开</P></DIV></DIV><BR><BR>2.2&nbsp;v4l2_fops<SPAN style="FONT-FAMILY: 黑体">接口</SPAN> </DIV>
+<P>v4l2_fops<SPAN style="FONT-FAMILY: 宋体">为</SPAN><SPAN style="FONT-FAMILY: Times New Roman">video4linux2</SPAN><SPAN style="FONT-FAMILY: 宋体">设备提供了统一的应用层接口，</SPAN><SPAN style="FONT-FAMILY: Times New Roman">v4l2_fops</SPAN><SPAN style="FONT-FAMILY: 宋体">定义如下</SPAN></P>
+<DIV class="dp-highlighter bg_csharp">
+<OL class=dp-c>
+<LI class=alt><SPAN><SPAN class=keyword><STRONG><FONT color=#006699>static</FONT></STRONG></SPAN><SPAN>&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>const</FONT></STRONG></SPAN><SPAN>&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;file_operations&nbsp;v4l2_fops&nbsp;=&nbsp;{&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;.owner&nbsp;=&nbsp;THIS_MODULE,&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.read&nbsp;=&nbsp;v4l2_read,&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.write&nbsp;=&nbsp;v4l2_write,&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.open&nbsp;=&nbsp;v4l2_open,&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.get_unmapped_area&nbsp;=&nbsp;v4l2_get_unmapped_area,&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.mmap&nbsp;=&nbsp;v4l2_mmap,&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.unlocked_ioctl&nbsp;=&nbsp;v4l2_ioctl,&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.release&nbsp;=&nbsp;v4l2_release,&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.poll&nbsp;=&nbsp;v4l2_poll,&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.llseek&nbsp;=&nbsp;no_llseek,&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>};&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>v4l2_fops中的成员函数最终要调用</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;video_device-&gt;fops中相应的成员&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;video_device-&gt;fops是具体video4linux2摄像头驱动程序必须实现的接口&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>static</FONT></STRONG></SPAN><SPAN>&nbsp;ssize_t&nbsp;v4l2_read(</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;file&nbsp;*filp,&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>char</FONT></STRONG></SPAN><SPAN>&nbsp;__user&nbsp;*buf,&nbsp;size_t&nbsp;sz,&nbsp;loff_t&nbsp;*off)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>{&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>return</FONT></STRONG></SPAN><SPAN>&nbsp;vdev-&gt;fops-&gt;read(filp,&nbsp;buf,&nbsp;sz,&nbsp;off);&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>}&nbsp;&nbsp;</SPAN><BR></LI></OL></DIV>
+<P class=alt>2.3&nbsp;/drivers/media/video/samsung/fimc/s3c_fimc_core.c </P>
+<P>驱动探测函数<SPAN style="FONT-FAMILY: Times New Roman">s3c_fimc_probe</SPAN><SPAN style="FONT-FAMILY: 宋体">定义</SPAN></P>
+<DIV class="dp-highlighter bg_csharp">
+<OL class=dp-c>
+<LI class=alt><SPAN><SPAN class=keyword><STRONG><FONT color=#006699>static</FONT></STRONG></SPAN><SPAN>&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;s3c_fimc_probe(</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;platform_device&nbsp;*dev)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>{&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;ctrl&nbsp;=&nbsp;s3c_fimc_register_controller(pdev);&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;clk_enable(ctrl-&gt;clock);</SPAN><SPAN class=comment><FONT color=#008200>//使能时钟 </FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=comment><FONT color=#008200>//注册V4L2驱动 </FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;ret&nbsp;=&nbsp;video_register_device(ctrl-&gt;vd,&nbsp;VFL_TYPE_GRABBER,&nbsp;ctrl-&gt;id);&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>}&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>s3c_fimc_register_contoller函数主要用来分配资源与申请中断&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>static</FONT></STRONG></SPAN><SPAN>&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;s3c_fimc_control&nbsp;*s3c_fimc_register_controller(</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;platform_device&nbsp;*pdev)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>{&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;ctrl-&gt;vd&nbsp;=&nbsp;&amp;s3c_fimc_video_device[id];&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=comment><FONT color=#008200>//申请中断 </FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;ctrl-&gt;irq&nbsp;=&nbsp;platform_get_irq(pdev,&nbsp;0);&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>if</FONT></STRONG></SPAN><SPAN>(request_irq(ctrl-&gt;irq,&nbsp;s3c_fimc_irq,&nbsp;IRQF_DISABLED,&nbsp;ctrl-&gt;name,&nbsp;ctrl))&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>};&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;video_device&nbsp;s3c_fimc_video_device[S3C_FIMC_MAX_CTRLS]&nbsp;=&nbsp;{&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;[0]&nbsp;=&nbsp;{&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.vfl_type&nbsp;=&nbsp;VID_TYPE_OVERLAY&nbsp;|&nbsp;VID_TYPE_CAPTURE&nbsp;|&nbsp;VID_TYPE_CLIPPING&nbsp;|&nbsp;VID_TYPE_SCALES,&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.fops&nbsp;=&nbsp;&amp;s3c_fimc_fops,&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.ioctl_ops&nbsp;=&nbsp;&amp;s3c_fimc_v4l2_ops,&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.release&nbsp;&nbsp;=&nbsp;s3c_fimc_vdev_release,&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.name&nbsp;=&nbsp;</SPAN><SPAN class=string>"sc3_video0"</SPAN><SPAN>,&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;},&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>}&nbsp;&nbsp;</SPAN></LI></OL></DIV>
+<P class=alt><SPAN>s3c_fimc_v4l2_ops,是在drivers/media/video/samsung/fimc中实现的v4l2_ioctl_ops，在用户空间进行ioctl等调用时，要调用到具体实现的各个函数指针&nbsp;&nbsp;</SPAN></P><SPAN></SPAN>
+<P class=alt><BR><SPAN style="FONT-FAMILY: 宋体; FONT-SIZE: 22pt">3&nbsp;V4L2&nbsp;<SPAN style="FONT-FAMILY: 宋体">操作</SPAN></SPAN><SPAN style="FONT-FAMILY: 宋体; FONT-SIZE: 22pt"></SPAN> </P>
+<P class=alt><SPAN style="FONT-FAMILY: 黑体; FONT-SIZE: 16pt"><FONT size=5>3.1&nbsp;s3c_fimc_open</FONT></SPAN> </P>
+<DIV class="dp-highlighter bg_csharp">
+<OL class=dp-c>
+<LI class=alt><SPAN><SPAN class=keyword><STRONG><FONT color=#006699>static</FONT></STRONG></SPAN><SPAN>&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;s3c_fimc_open(</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;file&nbsp;*filp)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>{&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;s3c_fimc_control&nbsp;*ctrl;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;id,&nbsp;ret;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;id&nbsp;=0;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;ctrl&nbsp;=&nbsp;&amp;s3c_fimc.ctrl[id];&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;mutex_lock(&amp;ctrl-&gt;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>lock</FONT></STRONG></SPAN><SPAN>);&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>if</FONT></STRONG></SPAN><SPAN>&nbsp;(atomic_read(&amp;ctrl-&gt;in_use))&nbsp;{&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ret&nbsp;=&nbsp;-EBUSY;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>goto</FONT></STRONG></SPAN><SPAN>&nbsp;resource_busy;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>else</FONT></STRONG></SPAN><SPAN>&nbsp;{&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;atomic_inc(&amp;ctrl-&gt;in_use);&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;s3c_fimc_reset(ctrl);&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;filp-&gt;private_data&nbsp;=&nbsp;ctrl;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;mutex_unlock(&amp;ctrl-&gt;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>lock</FONT></STRONG></SPAN><SPAN>);&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>return</FONT></STRONG></SPAN><SPAN>&nbsp;0;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>resource_busy:&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;mutex_unlock(&amp;ctrl-&gt;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>lock</FONT></STRONG></SPAN><SPAN>);&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>return</FONT></STRONG></SPAN><SPAN>&nbsp;ret;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>}&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>用户空间&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>打开设备文件&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>fd&nbsp;=&nbsp;open(dev_name,&nbsp;O_RDWR&nbsp;|&nbsp;O_NONBLOCK,&nbsp;0);&nbsp;&nbsp;</SPAN></LI></OL></DIV>
+<DIV>&nbsp;用户空间打开设备文件 fd = open(dev_name, O_RDWR | O_NONBLOCK, 0);</DIV>
+<DIV>&nbsp;</DIV>
+<DIV><FONT size=5>3.2&nbsp;获取设备的<SPAN style="FONT-FAMILY: Arial">capability,</SPAN><SPAN style="FONT-FAMILY: 黑体">查看设备有什么功能</SPAN></FONT> </DIV>
+<P>1）结构体</P>
+<DIV class="dp-highlighter bg_csharp">
+<OL class=dp-c>
+<LI class=alt><SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_capability&nbsp;cap;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>ret&nbsp;=&nbsp;ioctl(fd,&nbsp;VIDIOC_QUERYCAP,&nbsp;&amp;cap);&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>/include/linux/videodev2.h&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_capability&nbsp;{&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;__u8&nbsp;&nbsp;&nbsp;&nbsp;driver[16];&nbsp;</SPAN><SPAN class=comment><FONT color=#008200>/*&nbsp;i.e.&nbsp;"bttv"&nbsp;*/</FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;__u8&nbsp;&nbsp;&nbsp;&nbsp;card[32];&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=comment><FONT color=#008200>/*&nbsp;i.e.&nbsp;"Hauppauge&nbsp;WinTV"&nbsp;*/</FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;__u8&nbsp;&nbsp;&nbsp;&nbsp;bus_info[32];&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=comment><FONT color=#008200>/*&nbsp;"PCI:"&nbsp;+&nbsp;pci_name(pci_dev)&nbsp;*/</FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;__u32&nbsp;&nbsp;&nbsp;version;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=comment><FONT color=#008200>/*&nbsp;should&nbsp;use&nbsp;KERNEL_VERSION()&nbsp;*/</FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;__u32&nbsp;&nbsp;&nbsp;capabilities;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=comment><FONT color=#008200>/*&nbsp;Device&nbsp;capabilities&nbsp;*/</FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;__u32&nbsp;&nbsp;&nbsp;reserved[4];&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>};&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>驱动实现&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>static</FONT></STRONG></SPAN><SPAN>&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;s3c_fimc_v4l2_querycap(</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;file&nbsp;*filp,&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>void</FONT></STRONG></SPAN><SPAN>&nbsp;*fh,&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_capability&nbsp;*cap)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>{&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;s3c_fimc_control&nbsp;*ctrl&nbsp;=&nbsp;(</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;s3c_fimc_control&nbsp;*)&nbsp;fh;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;strcpy(cap-&gt;driver,&nbsp;</SPAN><SPAN class=string>"Samsung&nbsp;FIMC&nbsp;Driver"</SPAN><SPAN>);&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;strlcpy(cap-&gt;card,&nbsp;ctrl-&gt;vd-&gt;name,&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>sizeof</FONT></STRONG></SPAN><SPAN>(cap-&gt;card));&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;sprintf(cap-&gt;bus_info,&nbsp;</SPAN><SPAN class=string>"FIMC&nbsp;AHB-bus"</SPAN><SPAN>);&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;cap-&gt;version&nbsp;=&nbsp;0;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;cap-&gt;capabilities&nbsp;=&nbsp;(V4L2_CAP_VIDEO_OVERLAY&nbsp;|&nbsp;\&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;V4L2_CAP_VIDEO_CAPTURE&nbsp;|&nbsp;V4L2_CAP_STREAMING);&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>return</FONT></STRONG></SPAN><SPAN>&nbsp;0;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>}&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>应用层调用&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>static</FONT></STRONG></SPAN><SPAN>&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;video_capability(</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;fd)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>{&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;ret&nbsp;=&nbsp;0;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=comment><FONT color=#008200>/***********get&nbsp;the&nbsp;device&nbsp;capability********/</FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_capability&nbsp;cap;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;ret&nbsp;=&nbsp;ioctl(fd,&nbsp;VIDIOC_QUERYCAP,&nbsp;&amp;cap);&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>if</FONT></STRONG></SPAN><SPAN>&nbsp;(ret&nbsp;&lt;&nbsp;0)&nbsp;{&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;perror(</SPAN><SPAN class=string>"VIDIOC_QUERYCAP&nbsp;failed&nbsp;"</SPAN><SPAN>);&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>return</FONT></STRONG></SPAN><SPAN>&nbsp;ret;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;printf(</SPAN><SPAN class=string>"\n****Capability&nbsp;informations****\n"</SPAN><SPAN>);&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;printf(</SPAN><SPAN class=string>"driver:&nbsp;&nbsp;&nbsp;%s\n"</SPAN><SPAN>,&nbsp;cap.driver);&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>if</FONT></STRONG></SPAN><SPAN>&nbsp;(cap.capabilities&nbsp;&amp;&nbsp;V4L2_CAP_VIDEO_CAPTURE)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;printf(</SPAN><SPAN class=string>"Capture&nbsp;capability&nbsp;is&nbsp;supported\n"</SPAN><SPAN>);&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>if</FONT></STRONG></SPAN><SPAN>&nbsp;(cap.capabilities&nbsp;&amp;&nbsp;V4L2_CAP_STREAMING)&nbsp;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;printf(</SPAN><SPAN class=string>"Streaming&nbsp;capability&nbsp;is&nbsp;supported\n"</SPAN><SPAN>);&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>if</FONT></STRONG></SPAN><SPAN>&nbsp;(cap.capabilities&nbsp;&amp;&nbsp;V4L2_CAP_VIDEO_OVERLAY)&nbsp;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;printf(</SPAN><SPAN class=string>"Overlay&nbsp;capability&nbsp;is&nbsp;supported\n"</SPAN><SPAN>);&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>return</FONT></STRONG></SPAN><SPAN>&nbsp;0;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>}&nbsp;&nbsp;</SPAN></LI></OL></DIV>
+<DIV><BR><SPAN style="FONT-FAMILY: 黑体; FONT-SIZE: 16pt">3.3&nbsp;</SPAN><SPAN style="FONT-FAMILY: 黑体; FONT-SIZE: 16pt">选择视频输入，一个视频设备可以有多个视频输入</SPAN> </DIV>
+<DIV class="dp-highlighter bg_csharp">
+<OL class=dp-c>
+<LI class=alt><SPAN><SPAN>结构体&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_input&nbsp;input;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;index;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>得到INPUT&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>ret&nbsp;=&nbsp;ioctl(fd,&nbsp;VIDIOC_G_INPUT,&nbsp;&amp;index);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>input.index&nbsp;=&nbsp;index;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>列举INPUT&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>ret&nbsp;=&nbsp;ioctl(fd,&nbsp;VIDIOC_ENUMINPUT,&nbsp;&amp;input);&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>设置INPUT&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>ret&nbsp;=&nbsp;ioctl(fd,&nbsp;VIDIOC_S_INPUT,&nbsp;&amp;index);&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_input&nbsp;{&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;__u32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;index;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=comment><FONT color=#008200>/*&nbsp;&nbsp;Which&nbsp;input&nbsp;*/</FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;__u8&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;name[32];&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=comment><FONT color=#008200>/*&nbsp;&nbsp;Label&nbsp;*/</FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;__u32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;type;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=comment><FONT color=#008200>/*&nbsp;&nbsp;Type&nbsp;of&nbsp;input&nbsp;*/</FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;__u32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;audioset;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=comment><FONT color=#008200>/*&nbsp;&nbsp;Associated&nbsp;audios&nbsp;(bitfield)&nbsp;*/</FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;__u32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tuner;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=comment><FONT color=#008200>/*&nbsp;&nbsp;Associated&nbsp;tuner&nbsp;*/</FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;v4l2_std_id&nbsp;&nbsp;std;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;__u32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;status;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;__u32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;capabilities;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;__u32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;reserved[3];&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>};&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>Ioctl:&nbsp;VIDIOC_S_INPUT&nbsp;This&nbsp;IOCTL&nbsp;takes&nbsp;pointer&nbsp;to&nbsp;integer&nbsp;containing&nbsp;index&nbsp;of&nbsp;the&nbsp;input&nbsp;which&nbsp;has&nbsp;to&nbsp;be&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>set</FONT></STRONG></SPAN><SPAN>.&nbsp;Application&nbsp;will&nbsp;provide&nbsp;the&nbsp;index&nbsp;number&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>as</FONT></STRONG></SPAN><SPAN>&nbsp;an&nbsp;argument.&nbsp;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;0&nbsp;-&nbsp;Composite&nbsp;input,&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;1&nbsp;-&nbsp;S-Video&nbsp;input.&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>驱动&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>static</FONT></STRONG></SPAN><SPAN>&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;s3c_fimc_v4l2_s_input(</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;file&nbsp;*filp,&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>void</FONT></STRONG></SPAN><SPAN>&nbsp;*fh,&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;unsigned&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;i)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>{&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;s3c_fimc_control&nbsp;*ctrl&nbsp;=&nbsp;(</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;s3c_fimc_control&nbsp;*)&nbsp;fh;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>if</FONT></STRONG></SPAN><SPAN>&nbsp;(i&nbsp;&gt;=&nbsp;S3C_FIMC_MAX_INPUT_TYPES)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>return</FONT></STRONG></SPAN><SPAN>&nbsp;-EINVAL;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;ctrl-&gt;v4l2.input&nbsp;=&nbsp;&amp;s3c_fimc_input_types[i];&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>if</FONT></STRONG></SPAN><SPAN>&nbsp;(s3c_fimc_input_types[i].type&nbsp;==&nbsp;V4L2_INPUT_TYPE_CAMERA)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ctrl-&gt;in_type&nbsp;=&nbsp;PATH_IN_ITU_CAMERA;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>else</FONT></STRONG></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ctrl-&gt;in_type&nbsp;=&nbsp;PATH_IN_DMA;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>return</FONT></STRONG></SPAN><SPAN>&nbsp;0;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>}&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>static</FONT></STRONG></SPAN><SPAN>&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_input&nbsp;s3c_fimc_input_types[]&nbsp;=&nbsp;{&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;{&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.index&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;0,&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;</SPAN><SPAN class=string>"External&nbsp;Camera&nbsp;Input"</SPAN><SPAN>,&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.type&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;V4L2_INPUT_TYPE_CAMERA,&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.audioset&nbsp;&nbsp;&nbsp;=&nbsp;1,&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.tuner&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;0,&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.std&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;V4L2_STD_PAL_BG&nbsp;|&nbsp;V4L2_STD_NTSC_M,&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.status&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;0,&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;},&nbsp;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;{&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.index&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;1,&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;</SPAN><SPAN class=string>"Memory&nbsp;Input"</SPAN><SPAN>,&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.type&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;V4L2_INPUT_TYPE_MEMORY,&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.audioset&nbsp;&nbsp;&nbsp;=&nbsp;2,&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.tuner&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;0,&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.std&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;V4L2_STD_PAL_BG&nbsp;|&nbsp;V4L2_STD_NTSC_M,&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.status&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;0,&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>};&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>static</FONT></STRONG></SPAN><SPAN>&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;s3c_fimc_v4l2_enum_input(</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;file&nbsp;*filp,&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>void</FONT></STRONG></SPAN><SPAN>&nbsp;*fh,&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_input&nbsp;*i)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>{&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>if</FONT></STRONG></SPAN><SPAN>&nbsp;(i-&gt;index&nbsp;&gt;=&nbsp;S3C_FIMC_MAX_INPUT_TYPES)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>return</FONT></STRONG></SPAN><SPAN>&nbsp;-EINVAL;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;memcpy(i,&nbsp;&amp;s3c_fimc_input_types[i-&gt;index],&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>sizeof</FONT></STRONG></SPAN><SPAN>(</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_input));&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>return</FONT></STRONG></SPAN><SPAN>&nbsp;0;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>}&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>应用&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>static</FONT></STRONG></SPAN><SPAN>&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;video_input(</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;fd)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>{&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=comment><FONT color=#008200>/***********get&nbsp;and&nbsp;set&nbsp;the&nbsp;VIDIO&nbsp;INPUT********/</FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;ret&nbsp;=&nbsp;0;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_input&nbsp;input;</SPAN><SPAN class=comment><FONT color=#008200>//视频输入信息，对应命令VIDIOC_ENUMINPUT&nbsp; </FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;index;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;index&nbsp;=&nbsp;0;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=comment><FONT color=#008200>//0&nbsp;-&nbsp;Composite&nbsp;input,&nbsp;1&nbsp;-&nbsp;S-Video&nbsp;input. </FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;ret&nbsp;=&nbsp;ioctl&nbsp;(fd,&nbsp;VIDIOC_S_INPUT,&nbsp;&amp;index);&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>if</FONT></STRONG></SPAN><SPAN>&nbsp;(ret&nbsp;&lt;&nbsp;0)&nbsp;{&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;perror&nbsp;(</SPAN><SPAN class=string>"VIDIOC_S_INPUT"</SPAN><SPAN>);&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>return</FONT></STRONG></SPAN><SPAN>&nbsp;ret;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;input.index&nbsp;=&nbsp;index;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;ret&nbsp;=&nbsp;ioctl&nbsp;(fd,&nbsp;VIDIOC_ENUMINPUT,&nbsp;&amp;input);&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>if</FONT></STRONG></SPAN><SPAN>&nbsp;(ret&nbsp;&lt;&nbsp;0){&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;perror&nbsp;(</SPAN><SPAN class=string>"VIDIOC_ENUMINPUT"</SPAN><SPAN>);&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>return</FONT></STRONG></SPAN><SPAN>&nbsp;ret;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;printf(</SPAN><SPAN class=string>"\n****input&nbsp;informations****\n"</SPAN><SPAN>);&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;printf(</SPAN><SPAN class=string>"name&nbsp;of&nbsp;the&nbsp;input&nbsp;=&nbsp;%s\n"</SPAN><SPAN>,&nbsp;input.name);&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>return</FONT></STRONG></SPAN><SPAN>&nbsp;0;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>}&nbsp;&nbsp;</SPAN></LI></OL></DIV>
+<DIV><SPAN style="FONT-FAMILY: 黑体; FONT-SIZE: 16pt">3.4&nbsp;</SPAN><SPAN style="FONT-FAMILY: 黑体; FONT-SIZE: 16pt">遍历所有视频格式<SPAN style="FONT-FAMILY: Arial">,</SPAN><SPAN style="FONT-FAMILY: 黑体">查询驱动所支持的格式</SPAN></SPAN> </DIV>
+<DIV class="dp-highlighter bg_csharp">
+<OL class=dp-c>
+<LI class=alt><SPAN><SPAN>结构&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_fmtdes&nbsp;fmtdes;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>ret&nbsp;=&nbsp;ioctl(fd,&nbsp;VIDIOC_ENUM_FMT,&nbsp;&amp;fmtdes);&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_fmtdesc&nbsp;{&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;__u32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;index;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=comment><FONT color=#008200>/*&nbsp;Format&nbsp;number&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*/</FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>enum</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_buf_type&nbsp;&nbsp;type;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=comment><FONT color=#008200>/*&nbsp;buffer&nbsp;type&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*/</FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;__u32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;flags;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;__u8&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;description[32];&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=comment><FONT color=#008200>/*&nbsp;Description&nbsp;string&nbsp;*/</FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;__u32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;pixelformat;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=comment><FONT color=#008200>/*&nbsp;Format&nbsp;fourcc&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*/</FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;__u32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;reserved[4];&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>};&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>驱动&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>static</FONT></STRONG></SPAN><SPAN>&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;s3c_fimc_v4l2_enum_fmt_vid_cap(</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;file&nbsp;*filp,&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>void</FONT></STRONG></SPAN><SPAN>&nbsp;*fh,&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_fmtdesc&nbsp;*f)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>{&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;s3c_fimc_control&nbsp;*ctrl&nbsp;=&nbsp;(</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;s3c_fimc_control&nbsp;*)&nbsp;fh;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;index&nbsp;=&nbsp;f-&gt;index;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>if</FONT></STRONG></SPAN><SPAN>&nbsp;(index&nbsp;&gt;=&nbsp;S3C_FIMC_MAX_CAPTURE_FORMATS)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>return</FONT></STRONG></SPAN><SPAN>&nbsp;-EINVAL;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;memset(f,&nbsp;0,&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>sizeof</FONT></STRONG></SPAN><SPAN>(*f));&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;memcpy(f,&nbsp;ctrl-&gt;v4l2.fmtdesc&nbsp;+&nbsp;index,&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>sizeof</FONT></STRONG></SPAN><SPAN>(*f));&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>return</FONT></STRONG></SPAN><SPAN>&nbsp;0;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>} </SPAN><SPAN class=preprocessor></SPAN>&nbsp;</SPAN></LI>
+<LI class=alt><SPAN><SPAN class=preprocessor>#define&nbsp;S3C_FIMC_MAX_CAPTURE_FORMATS&nbsp;&nbsp;&nbsp;&nbsp;ARRAY_SIZE(s3c_fimc_capture_formats) </SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>const</FONT></STRONG></SPAN><SPAN>&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>static</FONT></STRONG></SPAN><SPAN>&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_fmtdesc&nbsp;s3c_fimc_capture_formats[]&nbsp;=&nbsp;{&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;{&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.index&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;0,&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.type&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;V4L2_BUF_TYPE_VIDEO_CAPTURE,&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.flags&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;FORMAT_FLAGS_PLANAR,&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.description&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;</SPAN><SPAN class=string>"4:2:0,&nbsp;planar,&nbsp;Y-Cb-Cr"</SPAN><SPAN>,&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.pixelformat&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;V4L2_PIX_FMT_YUV420,&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;},&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;{&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.index&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;1,&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.type&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;V4L2_BUF_TYPE_VIDEO_CAPTURE,&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.flags&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;FORMAT_FLAGS_PLANAR,&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.description&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;</SPAN><SPAN class=string>"4:2:2,&nbsp;planar,&nbsp;Y-Cb-Cr"</SPAN><SPAN>,&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.pixelformat&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;V4L2_PIX_FMT_YUV422P,&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;},&nbsp;&nbsp;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;{&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.index&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;2,&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.type&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;V4L2_BUF_TYPE_VIDEO_CAPTURE,&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.flags&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;FORMAT_FLAGS_PACKED,&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.description&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;</SPAN><SPAN class=string>"4:2:2,&nbsp;packed,&nbsp;YCBYCR"</SPAN><SPAN>,&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.pixelformat&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;V4L2_PIX_FMT_YUYV,&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;},&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;{&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.index&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;3,&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.type&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;V4L2_BUF_TYPE_VIDEO_CAPTURE,&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.flags&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;FORMAT_FLAGS_PACKED,&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.description&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;</SPAN><SPAN class=string>"4:2:2,&nbsp;packed,&nbsp;CBYCRY"</SPAN><SPAN>,&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.pixelformat&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;V4L2_PIX_FMT_UYVY,&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>};&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>const</FONT></STRONG></SPAN><SPAN>&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>static</FONT></STRONG></SPAN><SPAN>&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_fmtdesc&nbsp;s3c_fimc_overlay_formats[]&nbsp;=&nbsp;{&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;{&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.index&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;0,&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.type&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;V4L2_BUF_TYPE_VIDEO_OVERLAY,&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.flags&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;FORMAT_FLAGS_PACKED,&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.description&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;</SPAN><SPAN class=string>"16&nbsp;bpp&nbsp;RGB,&nbsp;le"</SPAN><SPAN>,&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.pixelformat&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;V4L2_PIX_FMT_RGB565,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;},&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;{&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.index&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;1,&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.type&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;V4L2_BUF_TYPE_VIDEO_OVERLAY,&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.flags&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;FORMAT_FLAGS_PACKED,&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.description&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;</SPAN><SPAN class=string>"24&nbsp;bpp&nbsp;RGB,&nbsp;le"</SPAN><SPAN>,&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.pixelformat&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;V4L2_PIX_FMT_RGB24,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;},&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>};&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>应用层&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>static</FONT></STRONG></SPAN><SPAN>&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;video_fmtdesc(</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;fd)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>{&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=comment><FONT color=#008200>/***********Format&nbsp;Enumeration************/</FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;ret&nbsp;=&nbsp;0;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_fmtdesc&nbsp;fmtdes;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;CLEAR(fmtdes);&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;fmtdes.index&nbsp;=&nbsp;0;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;fmtdes.type&nbsp;=&nbsp;V4L2_BUF_TYPE_VIDEO_CAPTURE;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;printf(</SPAN><SPAN class=string>"\n**********vidioc&nbsp;enumeration&nbsp;stream&nbsp;format&nbsp;informations:****\n"</SPAN><SPAN>);&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>while</FONT></STRONG></SPAN><SPAN>&nbsp;(1)&nbsp;{&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ret&nbsp;=&nbsp;ioctl(fd,&nbsp;VIDIOC_ENUM_FMT,&nbsp;&amp;fmtdes);&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>if</FONT></STRONG></SPAN><SPAN>&nbsp;(ret&nbsp;&lt;&nbsp;0)&nbsp;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>break</FONT></STRONG></SPAN><SPAN>;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;printf(</SPAN><SPAN class=string>"{&nbsp;pixelformat&nbsp;=&nbsp;%c%c%c%c,&nbsp;description&nbsp;=&nbsp;%s&nbsp;}\n"</SPAN><SPAN>,&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(fmtdes.pixelformat&nbsp;&amp;&nbsp;0xFF),&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(fmtdes.pixelformat&nbsp;&gt;&gt;&nbsp;8)&nbsp;&amp;&nbsp;0xFF,&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(fmtdes.pixelformat&nbsp;&gt;&gt;&nbsp;16)&nbsp;&amp;&nbsp;0xFF,&nbsp;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(fmtdes.pixelformat&nbsp;&gt;&gt;&nbsp;24)&nbsp;&amp;&nbsp;0xFF,&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fmtdes.description);&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>if</FONT></STRONG></SPAN><SPAN>&nbsp;(fmtdes.type&nbsp;==&nbsp;V4L2_BUF_TYPE_VIDEO_CAPTURE)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;printf(</SPAN><SPAN class=string>"video&nbsp;capture&nbsp;type:\n"</SPAN><SPAN>);&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>if</FONT></STRONG></SPAN><SPAN>&nbsp;(fmtdes.pixelformat&nbsp;==&nbsp;V4L2_PIX_FMT_YUYV)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;printf(</SPAN><SPAN class=string>"V4L2_PIX_FMT_YUYV\n"</SPAN><SPAN>);&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fmtdes.index++;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>return</FONT></STRONG></SPAN><SPAN>&nbsp;0;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>}&nbsp;&nbsp;</SPAN></LI></OL></DIV>
+<DIV><SPAN style="FONT-FAMILY: 黑体; FONT-SIZE: 16pt">3.5&nbsp;</SPAN><SPAN style="FONT-FAMILY: 黑体; FONT-SIZE: 16pt">设置视频捕获格式</SPAN><SPAN style="FONT-FAMILY: 黑体; FONT-SIZE: 16pt">（重要）</SPAN> </DIV>
+<DIV class="dp-highlighter bg_csharp">
+<OL class=dp-c>
+<LI class=alt><SPAN><SPAN>结构体&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>帧格式包括宽度和高度&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_format&nbsp;fmt;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>ret&nbsp;=&nbsp;ioctl(fd,&nbsp;VIDIOC_S_FMT,&nbsp;&amp;fmt);&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_format&nbsp;{&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>enum</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_buf_type&nbsp;type;</SPAN><SPAN class=comment><FONT color=#008200>//数据流类型，必须是V4L2_BUF_TYPE_VIDEO_CAPTURE </FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;union&nbsp;{&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_pix_format&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;pix;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=comment><FONT color=#008200>/*&nbsp;V4L2_BUF_TYPE_VIDEO_CAPTURE&nbsp;*/</FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_window&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;win;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=comment><FONT color=#008200>/*&nbsp;V4L2_BUF_TYPE_VIDEO_OVERLAY&nbsp;*/</FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_vbi_format&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;vbi;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=comment><FONT color=#008200>/*&nbsp;V4L2_BUF_TYPE_VBI_CAPTURE&nbsp;*/</FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_sliced_vbi_format&nbsp;&nbsp;&nbsp;sliced;&nbsp;&nbsp;</SPAN><SPAN class=comment><FONT color=#008200>/*&nbsp;V4L2_BUF_TYPE_SLICED_VBI_CAPTURE&nbsp;*/</FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;__u8&nbsp;&nbsp;&nbsp;&nbsp;raw_data[200];&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=comment><FONT color=#008200>/*&nbsp;user-defined&nbsp;*/</FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;fmt;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>};&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_pix_format&nbsp;&nbsp;{&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;__u32&nbsp;pixelformat;</SPAN><SPAN class=comment><FONT color=#008200>//视频数据存储类型，例如是YUV4:2:2还是RGB </FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>}&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>驱动&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>static</FONT></STRONG></SPAN><SPAN>&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;s3c_fimc_v4l2_s_fmt_vid_cap(</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;file&nbsp;*filp,&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>void</FONT></STRONG></SPAN><SPAN>&nbsp;*fh,&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_format&nbsp;*f)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>{&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;s3c_fimc_control&nbsp;*ctrl&nbsp;=&nbsp;(</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;s3c_fimc_control&nbsp;*)&nbsp;fh;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;ctrl-&gt;v4l2.frmbuf.fmt&nbsp;=&nbsp;f-&gt;fmt.pix;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>if</FONT></STRONG></SPAN><SPAN>&nbsp;(f-&gt;fmt.pix.priv&nbsp;==&nbsp;V4L2_FMT_IN)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;s3c_fimc_set_input_frame(ctrl,&nbsp;&amp;f-&gt;fmt.pix);&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>else</FONT></STRONG></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;s3c_fimc_set_output_frame(ctrl,&nbsp;&amp;f-&gt;fmt.pix);&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>return</FONT></STRONG></SPAN><SPAN>&nbsp;0;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>}&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;s3c_fimc_set_input_frame(</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;s3c_fimc_control&nbsp;*ctrl,&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_pix_format&nbsp;*fmt)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>{&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;s3c_fimc_set_input_format(ctrl,&nbsp;fmt);&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>return</FONT></STRONG></SPAN><SPAN>&nbsp;0;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>}&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>static</FONT></STRONG></SPAN><SPAN>&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>void</FONT></STRONG></SPAN><SPAN>&nbsp;s3c_fimc_set_input_format(</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;s3c_fimc_control&nbsp;*ctrl,&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_pix_format&nbsp;*fmt)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>{&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;s3c_fimc_in_frame&nbsp;*frame&nbsp;=&nbsp;&amp;ctrl-&gt;in_frame;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;width&nbsp;=&nbsp;fmt-&gt;width;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;height&nbsp;=&nbsp;fmt-&gt;height;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>switch</FONT></STRONG></SPAN><SPAN>&nbsp;(fmt-&gt;pixelformat)&nbsp;{&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>case</FONT></STRONG></SPAN><SPAN>&nbsp;V4L2_PIX_FMT_RGB565:&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;format&nbsp;=&nbsp;FORMAT_RGB565;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;planes&nbsp;=&nbsp;1;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>break</FONT></STRONG></SPAN><SPAN>;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>case</FONT></STRONG></SPAN><SPAN>&nbsp;V4L2_PIX_FMT_RGB24:&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;format&nbsp;=&nbsp;FORMAT_RGB888;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;planes&nbsp;=&nbsp;1;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>break</FONT></STRONG></SPAN><SPAN>;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>case</FONT></STRONG></SPAN><SPAN>&nbsp;V4L2_PIX_FMT_NV12:&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;format&nbsp;=&nbsp;FORMAT_YCBCR420;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;planes&nbsp;=&nbsp;2;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;order_2p&nbsp;=&nbsp;LSB_CBCR;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>break</FONT></STRONG></SPAN><SPAN>;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>case</FONT></STRONG></SPAN><SPAN>&nbsp;V4L2_PIX_FMT_NV21:&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;format&nbsp;=&nbsp;FORMAT_YCBCR420;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;planes&nbsp;=&nbsp;2;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;order_2p&nbsp;=&nbsp;LSB_CRCB;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>break</FONT></STRONG></SPAN><SPAN>;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>case</FONT></STRONG></SPAN><SPAN>&nbsp;V4L2_PIX_FMT_NV12X:&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;format&nbsp;=&nbsp;FORMAT_YCBCR420;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;planes&nbsp;=&nbsp;2;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;order_2p&nbsp;=&nbsp;MSB_CBCR;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>break</FONT></STRONG></SPAN><SPAN>;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>case</FONT></STRONG></SPAN><SPAN>&nbsp;V4L2_PIX_FMT_NV21X:&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;format&nbsp;=&nbsp;FORMAT_YCBCR420;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;planes&nbsp;=&nbsp;2;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;order_2p&nbsp;=&nbsp;MSB_CRCB;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>break</FONT></STRONG></SPAN><SPAN>;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>case</FONT></STRONG></SPAN><SPAN>&nbsp;V4L2_PIX_FMT_YUV420:&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;format&nbsp;=&nbsp;FORMAT_YCBCR420;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;planes&nbsp;=&nbsp;3;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>break</FONT></STRONG></SPAN><SPAN>;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>case</FONT></STRONG></SPAN><SPAN>&nbsp;V4L2_PIX_FMT_YUYV:&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;format&nbsp;=&nbsp;FORMAT_YCBCR422;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;planes&nbsp;=&nbsp;1;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;order_1p&nbsp;=&nbsp;IN_ORDER422_YCBYCR;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>break</FONT></STRONG></SPAN><SPAN>;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>case</FONT></STRONG></SPAN><SPAN>&nbsp;V4L2_PIX_FMT_YVYU:&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;format&nbsp;=&nbsp;FORMAT_YCBCR422;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;planes&nbsp;=&nbsp;1;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;order_1p&nbsp;=&nbsp;IN_ORDER422_YCRYCB;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>break</FONT></STRONG></SPAN><SPAN>;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>case</FONT></STRONG></SPAN><SPAN>&nbsp;V4L2_PIX_FMT_UYVY:&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;format&nbsp;=&nbsp;FORMAT_YCBCR422;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;planes&nbsp;=&nbsp;1;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;order_1p&nbsp;=&nbsp;IN_ORDER422_CBYCRY;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>break</FONT></STRONG></SPAN><SPAN>;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>case</FONT></STRONG></SPAN><SPAN>&nbsp;V4L2_PIX_FMT_VYUY:&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;format&nbsp;=&nbsp;FORMAT_YCBCR422;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;planes&nbsp;=&nbsp;1;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;order_1p&nbsp;=&nbsp;IN_ORDER422_CRYCBY;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>break</FONT></STRONG></SPAN><SPAN>;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>case</FONT></STRONG></SPAN><SPAN>&nbsp;V4L2_PIX_FMT_NV16:&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;format&nbsp;=&nbsp;FORMAT_YCBCR422;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;planes&nbsp;=&nbsp;2;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;order_1p&nbsp;=&nbsp;LSB_CBCR;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>break</FONT></STRONG></SPAN><SPAN>;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>case</FONT></STRONG></SPAN><SPAN>&nbsp;V4L2_PIX_FMT_NV61:&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;format&nbsp;=&nbsp;FORMAT_YCBCR422;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;planes&nbsp;=&nbsp;2;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;order_1p&nbsp;=&nbsp;LSB_CRCB;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>break</FONT></STRONG></SPAN><SPAN>;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>case</FONT></STRONG></SPAN><SPAN>&nbsp;V4L2_PIX_FMT_NV16X:&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;format&nbsp;=&nbsp;FORMAT_YCBCR422;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;planes&nbsp;=&nbsp;2;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;order_1p&nbsp;=&nbsp;MSB_CBCR;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>break</FONT></STRONG></SPAN><SPAN>;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>case</FONT></STRONG></SPAN><SPAN>&nbsp;V4L2_PIX_FMT_NV61X:&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;format&nbsp;=&nbsp;FORMAT_YCBCR422;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;planes&nbsp;=&nbsp;2;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;order_1p&nbsp;=&nbsp;MSB_CRCB;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>break</FONT></STRONG></SPAN><SPAN>;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>case</FONT></STRONG></SPAN><SPAN>&nbsp;V4L2_PIX_FMT_YUV422P:&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;format&nbsp;=&nbsp;FORMAT_YCBCR422;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frame-&gt;planes&nbsp;=&nbsp;3;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>break</FONT></STRONG></SPAN><SPAN>;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>}&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>应用层&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>static</FONT></STRONG></SPAN><SPAN>&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;video_setfmt(</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;fd)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>{&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;</SPAN><SPAN class=comment><FONT color=#008200>/***********set&nbsp;Stream&nbsp;data&nbsp;format********/</FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;ret&nbsp;=&nbsp;0;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_format&nbsp;fmt;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;CLEAR(fmt);&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;fmt.type&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;&nbsp;&nbsp;V4L2_BUF_TYPE_VIDEO_CAPTURE;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;fmt.fmt.pix.width&nbsp;&nbsp;&nbsp;=&nbsp;&nbsp;&nbsp;640;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;fmt.fmt.pix.height&nbsp;&nbsp;=&nbsp;&nbsp;&nbsp;480;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;fmt.fmt.pix.pixelformat&nbsp;=&nbsp;V4L2_PIX_FMT_YUYV;</SPAN><SPAN class=comment><FONT color=#008200>//for&nbsp;PAL </FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;fmt.fmt.pix.field&nbsp;=&nbsp;V4L2_FIELD_INTERLACED;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;ret&nbsp;=&nbsp;ioctl(fd,&nbsp;VIDIOC_S_FMT,&nbsp;&amp;fmt);&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>if</FONT></STRONG></SPAN><SPAN>&nbsp;(ret&nbsp;&lt;&nbsp;0)&nbsp;{&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;perror(</SPAN><SPAN class=string>"VIDIOC_S_FMT"</SPAN><SPAN>);&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>return</FONT></STRONG></SPAN><SPAN>&nbsp;ret;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>return</FONT></STRONG></SPAN><SPAN>&nbsp;0;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>}&nbsp;&nbsp;</SPAN></LI></OL></DIV>
+<P></P>
+<DIV>3.6&nbsp;视频格式查询 </DIV>
+<P>在<SPAN style="FONT-FAMILY: Times New Roman">v4l2</SPAN><SPAN style="FONT-FAMILY: 宋体">中，有两种查询视频格式的方法，一个是遍历所有视频格式的</SPAN></P>
+<P>一个是查询出一种格式的</P>
+<P>/*<SPAN style="FONT-FAMILY: 宋体">查询出一种格式</SPAN><SPAN style="FONT-FAMILY: Times New Roman">*/</SPAN></P>
+<P>ret&nbsp;=&nbsp;ioctl(fd,&nbsp;VIDIOC_G_FMT,&nbsp;&amp;fmt);</P>
+<P>/*<SPAN style="FONT-FAMILY: 宋体">遍历所有视频格式</SPAN><SPAN style="FONT-FAMILY: Times New Roman">,</SPAN><SPAN style="FONT-FAMILY: 宋体">查询驱动所支持的格式</SPAN><SPAN style="FONT-FAMILY: Times New Roman">*/</SPAN></P>
+<P>VIDIOC_ENUM_FMT</P>
+<DIV class="dp-highlighter bg_csharp">
+<OL class=dp-c>
+<LI class=alt><SPAN><SPAN>驱动&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>static</FONT></STRONG></SPAN><SPAN>&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;s3c_fimc_v4l2_g_fmt_vid_cap(</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;file&nbsp;*filp,&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>void</FONT></STRONG></SPAN><SPAN>&nbsp;*fh,&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_format&nbsp;*f)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>{&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;s3c_fimc_control&nbsp;*ctrl&nbsp;=&nbsp;(</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;s3c_fimc_control&nbsp;*)&nbsp;fh;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;size&nbsp;=&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>sizeof</FONT></STRONG></SPAN><SPAN>(</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_pix_format);&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;memset(&amp;f-&gt;fmt.pix,&nbsp;0,&nbsp;size);&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;memcpy(&amp;f-&gt;fmt.pix,&nbsp;&amp;(ctrl-&gt;v4l2.frmbuf.fmt),&nbsp;size);&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>return</FONT></STRONG></SPAN><SPAN>&nbsp;0;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>}&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>应用&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>static</FONT></STRONG></SPAN><SPAN>&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;video_getfmt(</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;fd)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>{&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=comment><FONT color=#008200>/***********get&nbsp;Stream&nbsp;data&nbsp;format********/</FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;ret=&nbsp;0;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_format&nbsp;fmt;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;CLEAR(fmt);&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;fmt.type&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;&nbsp;&nbsp;V4L2_BUF_TYPE_VIDEO_CAPTURE;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;ret&nbsp;=&nbsp;ioctl(fd,&nbsp;VIDIOC_G_FMT,&nbsp;&amp;fmt);&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>if</FONT></STRONG></SPAN><SPAN>&nbsp;(ret&nbsp;&lt;&nbsp;0)&nbsp;{&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;perror(</SPAN><SPAN class=string>"VIDIOC_G_FMT"</SPAN><SPAN>);&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>return</FONT></STRONG></SPAN><SPAN>&nbsp;ret;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;printf(</SPAN><SPAN class=string>"/n**********vidioc&nbsp;get&nbsp;stream&nbsp;format&nbsp;informations:****\n"</SPAN><SPAN>);&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>if</FONT></STRONG></SPAN><SPAN>&nbsp;(fmt.fmt.pix.pixelformat&nbsp;==&nbsp;V4L2_PIX_FMT_YUYV)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;printf(</SPAN><SPAN class=string>"8-bit&nbsp;YUYVV&nbsp;pixel&nbsp;format\n"</SPAN><SPAN>);&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;printf(</SPAN><SPAN class=string>"Size&nbsp;of&nbsp;the&nbsp;buffer&nbsp;=&nbsp;%d\n"</SPAN><SPAN>,&nbsp;fmt.fmt.pix.sizeimage);&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;printf(</SPAN><SPAN class=string>"Line&nbsp;offset&nbsp;=&nbsp;%d\n"</SPAN><SPAN>,&nbsp;fmt.fmt.pix.bytesperline);&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>if</FONT></STRONG></SPAN><SPAN>&nbsp;(fmt.fmt.pix.field&nbsp;==&nbsp;V4L2_FIELD_INTERLACED)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;printf(</SPAN><SPAN class=string>"Storate&nbsp;format&nbsp;is&nbsp;interlaced&nbsp;frame&nbsp;format\n"</SPAN><SPAN>);&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>return</FONT></STRONG></SPAN><SPAN>&nbsp;0;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>}&nbsp;&nbsp;</SPAN><BR><SPAN style="FONT-FAMILY: 黑体; FONT-SIZE: 16pt">3.7&nbsp;</SPAN><SPAN style="FONT-FAMILY: 黑体; FONT-SIZE: 16pt">向驱动申请帧缓冲，内存，一般不超过<SPAN style="FONT-FAMILY: Arial">5</SPAN><SPAN style="FONT-FAMILY: 黑体">个</SPAN><SPAN style="FONT-FAMILY: Arial">,</SPAN><SPAN style="FONT-FAMILY: 黑体">帧缓冲管理</SPAN></SPAN> </LI></OL></DIV>
+<DIV class="dp-highlighter bg_csharp">
+<OL class=dp-c>
+<LI class=alt><SPAN><SPAN>结构体&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_requestbuffers&nbsp;req;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>ret&nbsp;=&nbsp;ioctl(fd,&nbsp;VIDIOC_REQBUFS,&nbsp;&amp;req);&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>ret&nbsp;=&nbsp;ioctl(fd,&nbsp;VIDIOC_QUERYBUF,&nbsp;&amp;buf);</SPAN><SPAN class=comment><FONT color=#008200>//读取缓存 </FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_requestbuffers&nbsp;{&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;__u32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;count;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>enum</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_buf_type&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;type;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>enum</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_memory&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;memory;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;__u32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;reserved[2];&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>};&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_buffer&nbsp;{&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;__u32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;index;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>enum</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_buf_type&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;type;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;__u32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;bytesused;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;__u32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;flags;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>enum</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_field&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;field;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;timeval&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;timestamp;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_timecode&nbsp;&nbsp;&nbsp;&nbsp;timecode;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;__u32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sequence;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=comment><FONT color=#008200>/*&nbsp;memory&nbsp;location&nbsp;*/</FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>enum</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_memory&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;memory;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;union&nbsp;{&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;__u32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;offset;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;unsigned&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>long</FONT></STRONG></SPAN><SPAN>&nbsp;&nbsp;&nbsp;userptr;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;m;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;__u32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;length;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;__u32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;input;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;__u32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;reserved;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>};&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>使用VIDIOC_REQBUFS&nbsp;我们获取了req.count个缓存，下一步通过&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>调用VIDIOC_QUERYBUF&nbsp;命令来获取这些缓存的地址，然后使用&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>mmap函数转换成应用程序中的绝对地址，最后把这些缓存放入&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>缓存队列。&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>The&nbsp;main&nbsp;steps&nbsp;that&nbsp;the&nbsp;application&nbsp;must&nbsp;perform&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>for</FONT></STRONG></SPAN><SPAN>&nbsp;buffer&nbsp;allocation&nbsp;are:&nbsp;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>Allocating&nbsp;Memory&nbsp;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>Getting&nbsp;Physical&nbsp;Address&nbsp;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>Mapping&nbsp;Kernel&nbsp;Space&nbsp;Address&nbsp;to&nbsp;User&nbsp;Space&nbsp;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>驱动支持&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>static</FONT></STRONG></SPAN><SPAN>&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;s3c_fimc_v4l2_reqbufs(</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;file&nbsp;*filp,&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>void</FONT></STRONG></SPAN><SPAN>&nbsp;*fh,&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_requestbuffers&nbsp;*b)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>{&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>if</FONT></STRONG></SPAN><SPAN>&nbsp;(b-&gt;memory&nbsp;!=&nbsp;V4L2_MEMORY_MMAP)&nbsp;{&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;err(</SPAN><SPAN class=string>"V4L2_MEMORY_MMAP&nbsp;is&nbsp;only&nbsp;supported\n"</SPAN><SPAN>);&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>return</FONT></STRONG></SPAN><SPAN>&nbsp;-EINVAL;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=comment><FONT color=#008200>/*&nbsp;control&nbsp;user&nbsp;input&nbsp;*/</FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>if</FONT></STRONG></SPAN><SPAN>&nbsp;(b-&gt;count&nbsp;&gt;&nbsp;4)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;b-&gt;count&nbsp;=&nbsp;4;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>else</FONT></STRONG></SPAN><SPAN>&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>if</FONT></STRONG></SPAN><SPAN>&nbsp;(b-&gt;count&nbsp;&lt;&nbsp;1)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;b-&gt;count&nbsp;=&nbsp;1;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>return</FONT></STRONG></SPAN><SPAN>&nbsp;0;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>}&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>static</FONT></STRONG></SPAN><SPAN>&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;s3c_fimc_v4l2_querybuf(</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;file&nbsp;*filp,&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>void</FONT></STRONG></SPAN><SPAN>&nbsp;*fh,&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_buffer&nbsp;*b)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>{&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;s3c_fimc_control&nbsp;*ctrl&nbsp;=&nbsp;(</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;s3c_fimc_control&nbsp;*)&nbsp;fh;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>if</FONT></STRONG></SPAN><SPAN>&nbsp;(b-&gt;type&nbsp;!=&nbsp;V4L2_BUF_TYPE_VIDEO_OVERLAY&nbsp;&amp;&amp;&nbsp;\&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;b-&gt;type&nbsp;!=&nbsp;V4L2_BUF_TYPE_VIDEO_CAPTURE)&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>return</FONT></STRONG></SPAN><SPAN>&nbsp;-EINVAL;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>if</FONT></STRONG></SPAN><SPAN>&nbsp;(b-&gt;memory&nbsp;!=&nbsp;V4L2_MEMORY_MMAP)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>return</FONT></STRONG></SPAN><SPAN>&nbsp;-EINVAL;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;b-&gt;length&nbsp;=&nbsp;ctrl-&gt;out_frame.buf_size;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=comment><FONT color=#008200>/*</FONT></SPAN>&nbsp;</SPAN></LI>
+<LI><SPAN><SPAN class=comment><FONT color=#008200>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;NOTE:&nbsp;we&nbsp;use&nbsp;the&nbsp;m.offset&nbsp;as&nbsp;an&nbsp;index&nbsp;for&nbsp;multiple&nbsp;frames&nbsp;out.</FONT></SPAN>&nbsp;</SPAN></LI>
+<LI class=alt><SPAN><SPAN class=comment><FONT color=#008200>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;Because&nbsp;all&nbsp;frames&nbsp;are&nbsp;not&nbsp;contiguous,&nbsp;we&nbsp;cannot&nbsp;use&nbsp;it&nbsp;as</FONT></SPAN>&nbsp;</SPAN></LI>
+<LI><SPAN><SPAN class=comment><FONT color=#008200>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;original&nbsp;purpose.</FONT></SPAN>&nbsp;</SPAN></LI>
+<LI class=alt><SPAN><SPAN class=comment><FONT color=#008200>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;The&nbsp;index&nbsp;value&nbsp;used&nbsp;to&nbsp;find&nbsp;out&nbsp;which&nbsp;frame&nbsp;user&nbsp;wants&nbsp;to&nbsp;mmap.</FONT></SPAN>&nbsp;</SPAN></LI>
+<LI><SPAN><SPAN class=comment><FONT color=#008200>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*/</FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;b-&gt;m.offset&nbsp;=&nbsp;b-&gt;index&nbsp;*&nbsp;PAGE_SIZE;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>return</FONT></STRONG></SPAN><SPAN>&nbsp;0;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>}&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>static</FONT></STRONG></SPAN><SPAN>&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;s3c_fimc_v4l2_qbuf(</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;file&nbsp;*filp,&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>void</FONT></STRONG></SPAN><SPAN>&nbsp;*fh,&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_buffer&nbsp;*b)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>{&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>return</FONT></STRONG></SPAN><SPAN>&nbsp;0;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>}&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>应用层&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>static</FONT></STRONG></SPAN><SPAN>&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;video_mmap(</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;fd)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>{&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=comment><FONT color=#008200>/*******step&nbsp;1*****requestbuffers&nbsp;Allocating&nbsp;Memory&nbsp;*******/</FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;ret&nbsp;=&nbsp;0;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_requestbuffers&nbsp;req;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;CLEAR(req);&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;req.count&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;4;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;req.type&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;V4L2_BUF_TYPE_VIDEO_CAPTURE;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;req.memory&nbsp;&nbsp;&nbsp;=&nbsp;V4L2_MEMORY_MMAP;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;ret&nbsp;=&nbsp;ioctl(fd,&nbsp;VIDIOC_REQBUFS,&nbsp;&amp;req);&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>if</FONT></STRONG></SPAN><SPAN>&nbsp;(ret&nbsp;&lt;&nbsp;0)&nbsp;{&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;perror(</SPAN><SPAN class=string>"VIDIOC_REQBUFS"</SPAN><SPAN>);&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>return</FONT></STRONG></SPAN><SPAN>&nbsp;ret;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>if</FONT></STRONG></SPAN><SPAN>&nbsp;(req.count&nbsp;&lt;&nbsp;2)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;printf(</SPAN><SPAN class=string>"insufficient&nbsp;buffer&nbsp;memory\n"</SPAN><SPAN>);&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;printf(</SPAN><SPAN class=string>"Number&nbsp;of&nbsp;buffers&nbsp;allocated&nbsp;=&nbsp;%d\n"</SPAN><SPAN>,&nbsp;req.count);&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=comment><FONT color=#008200>/*******step&nbsp;2*****Getting&nbsp;Physical&nbsp;Address&nbsp;&nbsp;*******/</FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;buffers&nbsp;=&nbsp;calloc(req.count,&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>sizeof</FONT></STRONG></SPAN><SPAN>(*buffers));&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>for</FONT></STRONG></SPAN><SPAN>&nbsp;(n_buffers&nbsp;=&nbsp;0;&nbsp;n_buffers&nbsp;&lt;&nbsp;req.count;&nbsp;++n_buffers)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;{&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_buffer&nbsp;buf;</SPAN><SPAN class=comment><FONT color=#008200>//驱动中的一帧 </FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;CLEAR(buf);&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;buf.type&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;V4L2_BUF_TYPE_VIDEO_CAPTURE;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;buf.memory&nbsp;&nbsp;=&nbsp;V4L2_MEMORY_MMAP;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;buf.index&nbsp;&nbsp;&nbsp;=&nbsp;n_buffers;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ret&nbsp;=&nbsp;ioctl(fd,&nbsp;VIDIOC_QUERYBUF,&nbsp;&amp;buf);&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>if</FONT></STRONG></SPAN><SPAN>&nbsp;(ret&nbsp;&lt;&nbsp;0)&nbsp;{&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;perror(</SPAN><SPAN class=string>"VIDIOC_QUERYBUF"</SPAN><SPAN>);&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>return</FONT></STRONG></SPAN><SPAN>&nbsp;ret;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=comment><FONT color=#008200>/*******step&nbsp;3*****Mapping&nbsp;Kernel&nbsp;Space&nbsp;Address&nbsp;to&nbsp;User&nbsp;Space*******/</FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;buffers[n_buffers].length&nbsp;=&nbsp;buf.length;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;buffers[n_buffers].start&nbsp;=&nbsp;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mmap(NULL,&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;buf.length,&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PROT_READ&nbsp;|&nbsp;PROT_WRITE,&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;MAP_SHARED,&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fd,&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;buf.m.offset);&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=comment><FONT color=#008200>//if&nbsp;(MAP_FAILED&nbsp;==&nbsp;buffers[n_buffers].start) </FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=comment><FONT color=#008200>//perror("mmap&nbsp;failed&nbsp;\n"); </FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=comment><FONT color=#008200>/************requestbuffers&nbsp;in&nbsp;queue***********/</FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>for</FONT></STRONG></SPAN><SPAN>&nbsp;(i&nbsp;=&nbsp;0;&nbsp;i&nbsp;&lt;&nbsp;n_buffers;&nbsp;++i)&nbsp;{&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_buffer&nbsp;buf;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;CLEAR(buf);&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;buf.type&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;V4L2_BUF_TYPE_VIDEO_CAPTURE;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;buf.memory&nbsp;&nbsp;=&nbsp;V4L2_MEMORY_MMAP;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;buf.index&nbsp;=&nbsp;i;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ret&nbsp;=&nbsp;ioctl(fd,&nbsp;VIDIOC_QBUF,&nbsp;&amp;buf);</SPAN><SPAN class=comment><FONT color=#008200>//申请的缓冲进入队列 </FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>if</FONT></STRONG></SPAN><SPAN>&nbsp;(ret&nbsp;&lt;&nbsp;0)&nbsp;{&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;perror(</SPAN><SPAN class=string>"VIDIOC_QBUF"</SPAN><SPAN>);&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>return</FONT></STRONG></SPAN><SPAN>&nbsp;ret;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>return</FONT></STRONG></SPAN><SPAN>&nbsp;0;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN></LI></OL></DIV>
+<DIV><SPAN style="FONT-FAMILY: 黑体; FONT-SIZE: 16pt">3.8&nbsp;</SPAN><SPAN style="FONT-FAMILY: 黑体; FONT-SIZE: 16pt">开始捕捉图像数据</SPAN><SPAN style="FONT-FAMILY: 黑体; FONT-SIZE: 16pt">(<SPAN style="FONT-FAMILY: 黑体">重要</SPAN><SPAN style="FONT-FAMILY: Arial">)</SPAN></SPAN> </DIV>
+<DIV>
+<DIV class="dp-highlighter bg_csharp">
+<OL class=dp-c>
+<LI class=alt><SPAN><SPAN>&lt;PRE&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>class</FONT></STRONG></SPAN><SPAN>=csharp&nbsp;name=</SPAN><SPAN class=string>"code"</SPAN><SPAN>&gt;
+<P>结构体</P>&lt;PRE&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>class</FONT></STRONG></SPAN><SPAN>=csharp&nbsp;name=</SPAN><SPAN class=string>"code"</SPAN><SPAN>&gt;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>enum</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_buf_type&nbsp;type;</SPAN><SPAN class=comment><FONT color=#008200>//开始捕捉图像数据 </FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;type&nbsp;=&nbsp;V4L2_BUF_TYPE_VIDEO_CAPTURE;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;ret&nbsp;=&nbsp;ioctl(fd,&nbsp;VIDIOC_STREAMON,&nbsp;&amp;type);&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>enum</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_buf_type&nbsp;{&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;V4L2_BUF_TYPE_VIDEO_CAPTURE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;1,&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;V4L2_BUF_TYPE_VIDEO_OUTPUT&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;2,&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;V4L2_BUF_TYPE_VIDEO_OVERLAY&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;3,&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;V4L2_BUF_TYPE_VBI_CAPTURE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;4,&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;V4L2_BUF_TYPE_VBI_OUTPUT&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;5,&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;V4L2_BUF_TYPE_SLICED_VBI_CAPTURE&nbsp;&nbsp;&nbsp;=&nbsp;6,&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;V4L2_BUF_TYPE_SLICED_VBI_OUTPUT&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;7, </SPAN><SPAN class=preprocessor></SPAN>&nbsp;</SPAN></LI>
+<LI class=alt><SPAN><SPAN class=preprocessor>#if&nbsp;1 </SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=comment><FONT color=#008200>/*&nbsp;Experimental&nbsp;*/</FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;V4L2_BUF_TYPE_VIDEO_OUTPUT_OVERLAY&nbsp;=&nbsp;8, </SPAN><SPAN class=preprocessor></SPAN>&nbsp;</SPAN></LI>
+<LI><SPAN><SPAN class=preprocessor>#endif </SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;V4L2_BUF_TYPE_PRIVATE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;0x80,&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>};&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>驱动&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>static</FONT></STRONG></SPAN><SPAN>&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;s3c_fimc_v4l2_streamon(</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;file&nbsp;*filp,&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>void</FONT></STRONG></SPAN><SPAN>&nbsp;*fh,&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>enum</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_buf_type&nbsp;i)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>{&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;s3c_fimc_control&nbsp;*ctrl&nbsp;=&nbsp;(</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>struct</FONT></STRONG></SPAN><SPAN>&nbsp;s3c_fimc_control&nbsp;*)&nbsp;fh;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>if</FONT></STRONG></SPAN><SPAN>&nbsp;(i&nbsp;!=&nbsp;V4L2_BUF_TYPE_VIDEO_CAPTURE)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>return</FONT></STRONG></SPAN><SPAN>&nbsp;-EINVAL;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>printk(</SPAN><SPAN class=string>"s3c_fimc_v4l2_streamon&nbsp;is&nbsp;called\n"</SPAN><SPAN>);&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>if</FONT></STRONG></SPAN><SPAN>&nbsp;(ctrl-&gt;in_type&nbsp;!=&nbsp;PATH_IN_DMA)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;s3c_fimc_init_camera(ctrl);&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;ctrl-&gt;out_frame.skip_frames&nbsp;=&nbsp;0;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;FSET_CAPTURE(ctrl);&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;FSET_IRQ_NORMAL(ctrl);&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;s3c_fimc_start_dma(ctrl);&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>return</FONT></STRONG></SPAN><SPAN>&nbsp;0;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>}&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>硬件控制寄存器的配置&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>应用层&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN></SPAN><SPAN class=keyword><STRONG><FONT color=#006699>static</FONT></STRONG></SPAN><SPAN>&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;video_streamon(</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;fd)&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>{&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>int</FONT></STRONG></SPAN><SPAN>&nbsp;ret&nbsp;=&nbsp;0;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=comment><FONT color=#008200>/************start&nbsp;stream&nbsp;on***********/</FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>enum</FONT></STRONG></SPAN><SPAN>&nbsp;v4l2_buf_type&nbsp;types;</SPAN><SPAN class=comment><FONT color=#008200>//开始捕捉图像数据 </FONT></SPAN><SPAN>&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;types&nbsp;=&nbsp;V4L2_BUF_TYPE_VIDEO_CAPTURE;&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;ret&nbsp;=&nbsp;ioctl(fd,&nbsp;VIDIOC_STREAMON,&nbsp;&amp;types);&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>if</FONT></STRONG></SPAN><SPAN>&nbsp;(ret&nbsp;&lt;&nbsp;0)&nbsp;{&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;perror(</SPAN><SPAN class=string>"VIDIOC_STREAMON"</SPAN><SPAN>);&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>return</FONT></STRONG></SPAN><SPAN>&nbsp;ret;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;</SPAN></LI>
+<LI><SPAN>&nbsp;&nbsp;</SPAN></LI>
+<LI class=alt><SPAN>&nbsp;&nbsp;&nbsp;&nbsp;</SPAN><SPAN class=keyword><STRONG><FONT color=#006699>return</FONT></STRONG></SPAN><SPAN>&nbsp;0;&nbsp;&nbsp;</SPAN></SPAN></LI>
+<LI><SPAN>}</SPAN></LI></OL></DIV></DIV>           </div>
+            <!-- <div class="Blog_con3_1">管理员在2009年8月13日编辑了该文章文章。</div> -->
+            <div class="Blog_con2_1 Blog_con3_2">
+              <div>
+			  <!--<img src="/image/default/tu_8.png">-->
+			  <!-- JiaThis Button BEGIN -->
+				<DIV class="bshare-custom icon-medium-plus"><A class=bshare-qzone title=分享到QQ空间></A><A class=bshare-sinaminiblog title=分享到新浪微博></A><A class=bshare-renren title=分享到人人网></A><A class=bshare-qqmb title=分享到腾讯微博></A><A class=bshare-douban title=分享到豆瓣></A><A class="bshare-more bshare-more-icon more-style-addthis" title=更多平台></A></DIV>
+				<SCRIPT type=text/javascript charset=utf-8 src="http://static.bshare.cn/b/buttonLite.js#style=-1&amp;uuid=&amp;pophcol=3&amp;lang=zh"></SCRIPT>
+
+				<SCRIPT type=text/javascript charset=utf-8 src="http://static.bshare.cn/b/bshareC0.js"></SCRIPT>
+				<!-- JiaThis Button END -->
+			  </div>
+              阅读(4087) | 评论(0) | 转发(8) |
+			                <div class="HT_line3"></div>
+            </div>
+            <div class="Blog_con3_3">
+              <div><span id='digg_num'>0</span><a href="javascript:void(0)" id='digg' bid='3297657' url='/blog/digg.html' ></a></div>
+              <p>上一篇：<a href="/uid-26101960-id-3234732.html">嵌入式系统启动例程</a></p>
+              <p>下一篇：<a href="/uid-26101960-id-3349461.html">深入分析 Linux 内核链表</a></p>
+            </div>
+          </div>
+          <div class="Blog_con3_4">
+            <div class="Blog_tit2 Blog_tit6">相关热门文章</div>
+			            <ul class="Blog_ul7">
+						  <li><span class="Blog_span6"></span><a href="http://blog.chinaunix.net/uid-22028566-id-3652643.html" title='Android Multimedia Framework 架构--base on jellybean(1)' target='blank' >Android Multimedia Framework...</a></li>
+						  <li><span class="Blog_span6"></span><a href="http://blog.chinaunix.net/uid-24227137-id-3652249.html" title='Linux设备驱动之I2C架构分析' target='blank' >Linux设备驱动之I2C架构分析...</a></li>
+						  <li><span class="Blog_span6"></span><a href="http://blog.chinaunix.net/uid-28811392-id-3651695.html" title='自己学着写lcd入门级驱动程序' target='blank' >自己学着写lcd入门级驱动程序...</a></li>
+						  <li><span class="Blog_span6"></span><a href="http://blog.chinaunix.net/uid-28726100-id-3649640.html" title='网站制作' target='blank' >网站制作</a></li>
+						  <li><span class="Blog_span6"></span><a href="http://blog.chinaunix.net/uid-28659363-id-3647007.html" title='特别是云计算和大数据技术的快速发展使CRM' target='blank' >特别是云计算和大数据技术的快...</a></li>
+			            </ul>
+			            <ul class="Blog_ul7">
+						  <li><span class="Blog_span7"></span><a href="/uid-26583794-id-3166018.html" title='linux守护进程的几个关键地方' target='blank' >linux守护进程的几个关键地方...</a></li>
+						  <li><span class="Blog_span7"></span><a href="/uid-11857489-id-2814519.html" title='stagefright与opencore对比' target='blank' >stagefright与opencore对比</a></li>
+						  <li><span class="Blog_span7"></span><a href="/uid-22174347-id-1786933.html" title='嵌入式Linux之我行——u-boot-2009.08在2440上的移植详解（一）' target='blank' >嵌入式Linux之我行——u-boot-...</a></li>
+						  <li><span class="Blog_span7"></span><a href="/uid-22174347-id-1786952.html" title='嵌入式Linux之我行——内核、驱动开发篇' target='blank' >嵌入式Linux之我行——内核、...</a></li>
+						  <li><span class="Blog_span7"></span><a href="/uid-21091200-id-1830697.html" title='android的logcat详细用法' target='blank' >android的logcat详细用法</a></li>
+			            </ul>
+            <ul class="Blog_ul7">
+						  <li><span class="Blog_span6"></span><a href="/uid-25984261-id-3660984.html" title='简单字符设备驱动程序' target='blank'  >简单字符设备驱动程序...</a></li>
+						  <li><span class="Blog_span6"></span><a href="/uid-27962666-id-3655645.html" title='嵌入式Memo 15 SDRAM On May 6.2013' target='blank'  >嵌入式Memo 15 SDRAM On May 6...</a></li>
+						  <li><span class="Blog_span6"></span><a href="/uid-28811392-id-3651695.html" title='自己学着写lcd入门级驱动程序' target='blank'  >自己学着写lcd入门级驱动程序...</a></li>
+						  <li><span class="Blog_span6"></span><a href="/uid-28517466-id-3642674.html" title='Linux2.6.35下s3c64xx/spi子系统回顾一' target='blank'  >Linux2.6.35下s3c64xx/spi子系...</a></li>
+						  <li><span class="Blog_span6"></span><a href="/uid-20648944-id-3637113.html" title='编译vlc+live555,支持rtsp流播放' target='blank'  >编译vlc+live555,支持rtsp流播...</a></li>
+			            </ul>
+            <div class="clear"></div>
+          </div>
+		  <!--
+          <div class="Blog_con3_4 Blog_con3_5">
+            <div class="Blog_tit2 Blog_tit7">热门推荐</div>
+            <ul>
+			              <li><a href="" title="" target='blank' ></a></li>
+			            </ul>
+          </div>
+		  -->
+        </div>
+      </div>
+      <div class="Blog_right1_7" id='replyList'>
+		<div class="Blog_tit3">给主人留下些什么吧！~~</div>
+				<!--暂无内容-->
+				<!-- 评论分页-->
+		<div class="Blog_right1_6 Blog_right1_12">
+        		</div>
+		<!-- 评论分页-->
+        <div class="Blog_right1_10">
+          <div class="Blog_tit3">评论热议</div>
+		  		 <!--未登录 -->
+        <div class="Blog_right1_8">
+          <div class="nologin_con1"> 请登录后评论。
+            <p><a href="/site/login.html">登录</a> <a href="http://sso.chinaunix.net/Register?return_url=http%3A%2F%2Ft.cublog.com%2F">注册</a></p>
+          </div>
+        </div>
+		
+        </div>
+      </div>
+    </div>
+  </div>
+  <input type='hidden' id='report_url' value='/blog/ViewReport.html' />
+
+<script type="text/javascript">
+  	//测试字符串的长度 一个汉字算2个字节
+	function mb_strlen(str)
+	{
+		var len=str.length;
+		var totalCount=0;
+		for(var i=0;i<len;i++)
+		{
+			var c = str.charCodeAt(i);
+			if ((c >= 0x0001 && c <= 0x007e) || (0xff60<=c && c<=0xff9f)) {
+				totalCount++;
+			}else{
+				totalCount+=2;
+			}
+		}
+		return totalCount;
+	}
+	/*
+	var Util = {};
+	Util.calWbText = function (text, max){
+		if(max === undefined)
+			max = 500;
+		var cLen=0;
+		var matcher = text.match(/[^\x00-\xff]/g),
+			wlen  = (matcher && matcher.length) || 0;
+		//匹配url链接正则 http://***
+		var pattern = /http:\/\/([\w-]+\.)+[\w-]+(\/*[\w-\.\/\?%&=][^\s^\u4e00-\u9fa5]*)?/gi;
+		//匹配的数据存入数组
+		var arrPt = new Array();
+		var i = 0;
+		while((result = pattern.exec(text)) != null){
+			arrPt[i] = result[0];
+			i++;
+		}
+		//替换掉原文本中的链接
+		for(var j = 0;j<arrPt.length;j++){
+			text = text.replace(arrPt[j],"");
+		}
+		//减掉链接所占的长度
+		return Math.floor((max*2 - text.length - wlen)/2 - 12*i);
+	};
+	*/
+	var allowComment = '0';
+	
+	//举报弹出层
+	function showJuBao(url, cid){
+		
+			$.cover(false);
+			asyncbox.open({
+				id  : 'report_thickbox',
+				url : url,
+				title : '举报违规',
+				width : 378,
+				height : 240,
+				scroll : 'no',
+				data : {
+					'cid'	 : cid,
+					'idtype' : 2 
+				},
+				callback : function(action){
+					if(action == 'close'){
+						$.cover(false);
+					}
+				}
+			});
+	}
+
+	$(function(){
+		//顶  js中暂未添加&过滤 
+		$('#digg').live('click' , function(){
+
+			if(isOnLine == '' )
+			{
+				//showErrorMsg('登录之后才能进行此操作' , '消息提示');
+				showErrorMsg('操作失败,您需要先登录!', '消息提示', '/site/login.html');
+				return false;
+			}
+
+			var bid = $('#digg').attr('bid');
+			var url = $('#digg').attr('url');
+
+			var digg_str = $.cookie('digg_id');
+			if(digg_str != null)
+			{
+				var arr= new Array(); //定义一数组
+
+				arr = digg_str.split(","); //字符分割     
+				for( i=0 ; i < arr.length ; i++ )   
+				{   
+					if(bid == arr[i])
+					{
+						showErrorMsg('已经赞过该文章', '消息提示'); 
+						return false;
+					}
+				} 
+			}
+			$.ajax({
+				type:"POST",
+				url:url,	
+				data: {
+					'bid' : bid 
+				},
+				dataType: 'json',
+				success:function(msg){
+					if(msg.error == 0)
+					{
+						var num = parseInt($('#digg_num').html(),10);
+						num += 1;
+						$('#digg_num').html(num);
+						$('#digg').die();
+
+						if(digg_str == null)
+						{
+							$.cookie('digg_id', bid, {expires: 30 , path: '/'});
+						}
+						else
+						{
+							$.cookie('digg_id', digg_str + ',' + bid, {expires: 30 , path: '/'});
+						}
+						showSucceedMsg('谢谢' , '消息提示');
+					}
+					else if(msg.error == 1)
+					{
+						//showErrorMsg(msg.error_content , '消息提示'); 
+						showErrorMsg('操作失败,您需要先登录!', '消息提示', '/site/login.html');
+					}
+					else if(msg.error == 2)
+					{
+						showErrorMsg(msg.error_content , '消息提示'); 
+					}
+				}
+			});
+		});
+		//举报弹出层
+		/*$('.box_report').live('click' , function(){
+			if(isOnLine == '' )
+			{
+				//showErrorMsg('登录之后才能进行此操作' , '消息提示');
+				showErrorMsg('操作失败,您需要先登录!', '消息提示', '/site/login.html');
+				return false;
+			}
+			var url = $('#report_url').val();
+			var cid = $(this).attr('cid');
+			$.cover(false);
+			asyncbox.open({
+				id  : 'report_thickbox',
+				url : url,
+				title : '举报违规',
+				width : 378,
+				height : 240,
+				scroll : 'no',
+				data : {
+					'cid'	 : cid,
+					'idtype' : 2 
+				},
+				callback : function(action){
+					if(action == 'close'){
+						$.cover(false);
+					}
+				}
+			});
+		});*/
+
+
+		//评论相关代码
+		
+		//点击回复显示评论框
+		$('.Blog_a10').live('click' , function(){
+			if(isOnLine == '' )
+			{
+				//showErrorMsg('登录之后才能进行此操作' , '消息提示');
+				showErrorMsg('操作失败,您需要先登录!', '消息提示', '/site/login.html');
+				return false;
+			}
+
+			if(allowComment == 1)
+			{
+				showErrorMsg('该博文不允许评论' , '消息提示'); 
+				return false;
+			}
+			var tid = $(this).attr('toid');//留言作者id
+			var bid = $(this).attr('bid');//blogid
+			var cid = $(this).attr('cid');//留言id
+			var tname = $(this).attr('tname');
+			var tpl  = '<div class="Blog_right1_9">';
+				tpl +=	 '<div class="div2">';
+				tpl +=     '<textarea name="" cols="" rows="" class="Blog_ar1_1" id="rmsg">文明上网，理性发言...</textarea>';
+				tpl +=	 '</div>';
+				tpl +=   '<div class="div3">';
+				tpl +=		'<div class="div3_2"><a href="javascript:void(0);" class="Blog_a11" id="quota_sbumit" url="/Comment/PostComment.html" tid="'+tid+'" bid="'+bid+'" cid="'+cid+'" tname="'+tname+'" ></a><a href="javascript:void(0)" id="qx_comment" class="Blog_a12"></a></div>';
+				tpl +=		'<div class="div3_1"><a href="javascript:void(0);" id="mface"><span></span>表情</a></div>';
+				tpl +=		'<div class="clear"></div>';
+				tpl +=	 '</div>';
+				tpl +=  '</div>';
+			$('.z_move_comment').html('');
+			$(this).parents('.Blog_right1_8').find('.z_move_comment').html(tpl).show();
+		});
+		//引用的评论提交
+		$('#quota_sbumit').live('click' , function(){
+
+			if(isOnLine == '' )
+			{
+				//showErrorMsg('登录之后才能进行此操作' , '消息提示');
+				showErrorMsg('操作失败,您需要先登录!', '消息提示', '/site/login.html');
+				return false;
+			}
+
+			var bid   = $(this).attr('bid');
+			var tid   = $(this).attr('tid');//被引用人的id
+			var qid   = $(this).attr('cid');//引用的id
+			var url = $(this).attr('url');
+			var text = $('#rmsg').val();
+			var tname = $(this).attr('tname');
+			if(text == '' || text=='文明上网，理性发言...')
+			{
+				showErrorMsg('评论内容不能为空！' , '消息提示'); 
+				return false;
+			}
+			else
+			{
+				if(mb_strlen(text) > 1000){
+					showErrorMsg('评论内容不能超过500个汉字' , '消息提示'); 
+					return false;
+				}
+			}
+		    $.ajax({
+		        type: "post",
+			    url: url ,
+			    data: {'bid': bid , 'to' : tid , 'qid' : qid , 'text': text , 'tname' : tname },
+				dataType: 'json',
+			    success: function(data){
+				    if(data.code == 1){
+						var tpl =  '<div class="Blog_right1_8">';
+							tpl+=     '<div class="Blog_right_img1"><a href="' +data.info.url+ '" >' + data.info.header + '</a></div>';
+							tpl+=     '<div class="Blog_right_font1">';
+							tpl+=         '<p class="Blog_p5"><span><a href="' +data.info.url+ '" >' + data.info.username + '</a></span>' + data.info.dateline + '</p>';
+							tpl+=         '<p class="Blog_p7"><a href="' + data.info.quota.url + '">' + data.info.quota.username + '</a>：'+ data.info.quota.content + '</p>';
+							tpl+=         '<p class="Blog_p8">' + data.info.content + '</p><span class="span_text1"><a href="javascript:void(0);" class="Blog_a10" toid=' + data.info.fuid + ' bid=' + data.info.bid + ' cid=' + data.info.cid + '  tname = ' + data.info.username + ' >回复</a> | 　<a href="' + data.info.delurl + '" >删除</a>　| 　<a href="javascript:showJuBao(\'/blog/ViewReport.html\','+data.info.cid+')" class="box_report" cid="' + data.info.cid + '" >举报</a></span></div>';
+							tpl+=         '<div class="z_move_comment" style="display:none"></div>';
+							tpl+=	      '<div class="Blog_line1"></div></div>';
+							$('#replyList .Blog_right1_8:first').before(tpl);
+							$('.z_move_comment').html('').hide();
+				    }
+					else if(data.code == -1){
+						//showErrorMsg(data.info , '消息提示'); 
+						showErrorMsg('操作失败,您需要先登录!', '消息提示', '/site/login.html');
+			        }
+                },
+			    error: function(){//请求出错处理
+                        
+                }
+			});
+		});
+		//底部发表评论
+		$('#submitmsg').click(function(){
+			if(allowComment == 1)
+			{
+				showErrorMsg('该博文不允许评论' , '消息提示'); 
+				return false;
+			}
+			var bid   = $(this).attr('bid');
+			var toid  = $(this).attr('toid');
+			var text = $('#reply').val();
+			var url = $(this).attr('url');
+			if(text == '' || text=='文明上网，理性发言...')
+			{
+				showErrorMsg('评论内容不能为空！' , '消息提示'); 
+				return false;
+			}
+			else
+			{
+				if(mb_strlen(text) > 1000){
+					showErrorMsg('评论内容不能超过500个汉字' , '消息提示'); 
+					return false;
+				}
+			}
+		    $.ajax({
+		        type: "post",
+			    url: url ,
+			    data: {'bid': bid , 'to' : toid ,'text': text},
+				dataType: 'json',
+			    success: function(data){
+				    if(data.code == 1)
+					{
+						var tpl   = '<div class="Blog_right1_8">';
+							tpl  +=   '<div class="Blog_right_img1"><a href="' +data.info.url+ '" >' + data.info.header + '</a></div>';
+							tpl  +=	  '<div class="Blog_right_font1">';
+							tpl  +=       '<p class="Blog_p5"><span><a href="' +data.info.url+ '" >' + data.info.username + '</a></span>' + data.info.dateline + '</p>';
+							tpl  +=       '<p class="Blog_p6">' + data.info.content + '</p>';
+							tpl  +=		  '<div class="div1"><a href="javascript:void(0);" class="Blog_a10"  toid=' + data.info.fuid + ' bid=' + data.info.bid + ' cid=' + data.info.cid + '>回复</a> | 　<a href="' + data.info.delurl + '">删除</a>　| 　<a href="javascript:showJuBao(\'/blog/ViewReport.html\','+data.info.cid+')" class="box_report" cid="' + data.info.cid + '">举报</a></div>';
+							tpl  +=		  '<div class="z_move_comment" style="display:none"></div>';
+							tpl  +=    '</div><div class="Blog_line1"></div></div>';
+							$('.Blog_tit3:first').after(tpl);
+							$('#reply').val('文明上网，理性发言...');
+					}
+					else if(data.code == -1)
+					{
+						showErrorMsg(data.info , '消息提示'); 
+			        }
+                },
+			    error: function(){//请求出错处理
+                        
+                }
+		    });
+			
+		});
+		//底部评论重置
+		$('#reset_comment').click(function(){
+			$('#reply').val('文明上网，理性发言...');
+		});
+		//取消回复
+		$('#qx_comment').live('click' , function(){
+			$('.z_move_comment').html('').hide();
+		});
+
+
+		$('#rmsg, #reply').live({
+		    focus:function(){
+			    if($(this).val() == '文明上网，理性发言...'){
+			        $(this).val('');
+			    }
+			},
+			blur:function(){
+		        if($(this).val() == ''){
+			        $(this).val('文明上网，理性发言...');
+			    }
+			}
+		});
+		/*
+		//字数限制
+		$('#rmsg, #reply').live('keyup', function(){
+			var id = $(this).attr('id');
+			var left = Util.calWbText($(this).val(), 500);
+			var eid = '#errmsg';
+			
+			if(id == 'reply') eid =  '#rerrmsg';
+			if (left >= 0)
+		        $(eid).html('您还可以输入<span>' + left + '</span>字');
+		    else
+		        $(eid).html('<font color="red">您已超出<span>' + Math.abs(left) + '</span>字 </font>');
+		});
+		*/
+		//加载表情
+	    $('#face').qqFace({id : 'facebox1', assign : 'reply', path : '/image/qqface/'});
+	    $('#mface').qqFace({id : 'facebox', assign : 'rmsg', path:'/image/qqface/'});
+	    
+	    //转发文章
+	    $('#repost_bar').live('click' , function(){
+			if(isOnLine == '' )
+			{
+				//showErrorMsg('登录之后才能进行此操作' , '消息提示');
+				showErrorMsg('操作失败,您需要先登录!', '消息提示', '/site/login.html');
+				return false;
+			}
+	    	var bid  = $(this).attr('bid');
+	    	var url  = $(this).attr('url');
+	    	asyncbox.confirm('转发文章','确认', function(action){
+	    	  if(action == 'ok'){
+	    	    $.ajax({
+				type:"POST",
+				url:url,	
+				data: {
+					'bid' : bid 
+				},
+				dataType: 'json',
+				success:function(msg){
+				  if(msg.error == 0){
+				    showSucceedMsg('转发成功！', '消息提示');
+				  }else if(msg.error == 1){
+				    //location.href = '/index.php?r=site/login';
+					showErrorMsg('操作失败,您需要先登录!', '消息提示', '/site/login.html');
+				  }else{
+				    showErrorMsg(msg.error_content, '消息提示');
+			      }
+				}
+			  });
+	    	  }
+	    	});
+
+		});
+
+	});
+</script>
+<!--该部分应该放在输出代码块的后面才起作用 -->
+<script type="text/javascript">
+
+SyntaxHighlighter.autoloader(
+	'applescript			/highlight/scripts/shBrushAppleScript.js',
+	'actionscript3 as3		/highlight/scripts/shBrushAS3.js',
+	'bash shell				/highlight/scripts/shBrushBash.js',
+	'coldfusion cf			/highlight/scripts/shBrushColdFusion.js',
+	'cpp c					/highlight/scripts/shBrushCpp.js',
+	'c# c-sharp csharp		/highlight/scripts/shBrushCSharp.js',
+	'css					/highlight/scripts/shBrushCss.js',
+	'delphi pascal			/highlight/scripts/shBrushDelphi.js',
+	'diff patch pas			/highlight/scripts/shBrushDiff.js',
+	'erl erlang				/highlight/scripts/shBrushErlang.js',
+	'groovy					/highlight/scripts/shBrushGroovy.js',
+	'java					/highlight/scripts/shBrushJava.js',
+	'jfx javafx				/highlight/scripts/shBrushJavaFX.js',
+	'js jscript javascript	/highlight/scripts/shBrushJScript.js',
+	'perl pl				/highlight/scripts/shBrushPerl.js',
+	'php					/highlight/scripts/shBrushPhp.js',
+	'text plain				/highlight/scripts/shBrushPlain.js',
+	'py python				/highlight/scripts/shBrushPython.js',
+	'ruby rails ror rb		/highlight/scripts/shBrushRuby.js',
+	'scala					/highlight/scripts/shBrushScala.js',
+	'sql					/highlight/scripts/shBrushSql.js',
+	'vb vbnet				/highlight/scripts/shBrushVb.js',
+	'xml xhtml xslt html	/highlight/scripts/shBrushXml.js'
+);
+SyntaxHighlighter.all();
+
+
+function code_hide(id){
+	var code = document.getElementById(id).style.display;
+	if(code == 'none'){
+		document.getElementById(id).style.display = 'block';
+	}else{
+		document.getElementById(id).style.display = 'none';
+	}
+}
+</script>
+  <!-- footer -->
+  <div class="Blog_footer" style='clear:both'>
+    <div><a href="http://www.chinaunix.net/about/index.shtml" target="_blank" rel="nofollow">关于我们</a> | <a href="http://www.it168.com/bottomfile/it168.shtml" target="_blank" rel="nofollow">关于IT168</a> | <a href="http://www.chinaunix.net/about/connect.html" target="_blank" rel="nofollow">联系方式</a> | <a href="http://www.chinaunix.net/about/service.html" target="_blank" rel="nofollow">广告合作</a> | <a href="http://www.it168.com//bottomfile/flgw/fl.htm" target="_blank" rel="nofollow">法律声明</a> | <a href="http://sso.chinaunix.net/Register?return_url=http%3A%2F%2Fblog.chinaunix.net%2F
+" target="_blank" rel="nofollow">免费注册</a>
+      <p>Copyright  2001-2010 ChinaUnix.net All Rights Reserved 北京皓辰网域网络信息技术有限公司. 版权所有 </p>
+      <div>感谢所有关心和支持过ChinaUnix的朋友们
+        <p>京ICP证041476号 京ICP证060528号</p>
+      </div>
+    </div>
+  </div>
+</div>
+<script language="javascript">
+
+//全局错误提示弹出框
+function showErrorMsg(content, title, url){
+	var url = url || '';
+	var title = title || '消息提示';
+	var html = '';
+	html += '<div class="HT_layer3_1 HT_layer3_2"><ul><li><p><span class="login_span1"></span>' + content + '</p></li>';
+	if(url == '' || url.length == 0){
+		html += '<li class="HT_li1"><input type="button" class="HT_btn2"  onclick=\'close_windows("error_msg")\'></li>';	
+	} else {
+		html += '<li class="HT_li1"><input type="button" class="login_btn1" onclick="location.href=\'' + url + '\'"></li>';
+	}
+	html += '</ul></div>';
+	$.cover(true);
+	   asyncbox.open({
+		 id: 'error_msg',
+		 title : title,
+		 html : html,
+		 'callback' : function(action){
+			 if(action == 'close'){
+				 $.cover(false);
+			 }
+		 }
+	});
+}
+
+//全局正确提示
+function showSucceedMsg(content, title , url ){
+	var url = url || '';
+	var title = title || '消息提示';
+	var html = '';
+	html += '<div class="HT_layer3_1 HT_layer3_2"><ul><li><p><span class="login_span2"></span>' + content + '</p></li>';
+	if(url == '' || url.length == 0){
+		html += '<li class="HT_li1"><input type="button" class="HT_btn2"  onclick=\'close_windows("error_msg")\'></li>';	
+	} else {
+		html += '<li class="HT_li1"><input type="button" class="login_btn1" onclick="location.href=\'' + url + '\'"></li>';
+	}
+	html += '</ul></div>';
+	$.cover(true);
+	asyncbox.open({
+		 id: 'error_msg',
+		 title : title,
+		 html : html,
+		 'callback' : function(action){
+			 if(action == 'close'){
+				 $.cover(false);
+			 }
+		 }
+	});
+}
+
+//关闭指定id的窗口
+function close_windows(id){
+	$.cover(false);
+	$.close(id);
+}
+
+
+//公告
+var tID;
+var tn;                        // 高度
+var nStopTime = 5000;        // 不同行间滚动时间隔的时间，值越小，移动越快
+var nSpeed = 50;            // 滚动时，向上移动一像素间隔的时间，值越小，移动越快
+var isMove = true;
+var nHeight = 25;
+var nS = 0;
+var nNewsCount = 3;
+
+/**
+ * n 用于表示是否为第一次运行
+ **/
+function moveT(n)
+{
+    clearTimeout(tID)
+    var noticev2 = document.getElementById("noticev2")
+    nS = nSpeed;
+    
+    // 只在第一次调用时运行，初始化环境（有没有参数）
+    if (n)
+    {
+        // 设置行高
+        noticev2.style.lineHeight = nHeight + "px";
+        // 初始化显示位置
+        tn = 0;
+        // 刚进入时在第一行停止时间
+        nS = nStopTime;
+    }
+    
+    // 判断鼠标是否指向层
+    if (isMove)
+    {
+        // 向上移动一像素
+        tn--;
+        // 如果移动到最下面一行了，则移到顶行
+        if (Math.abs(tn) == nNewsCount * nHeight)
+        {
+            tn = 0;
+        }
+        // 设置位置
+        noticev2.style.marginTop = tn + "px";
+        // 完整显示一行时，停止一段时间
+        if (tn % nHeight == 0)
+        {
+            nS = nStopTime;
+        }
+    }
+
+    tID = setTimeout("moveT()", nS);
+}
+moveT(1);    // 此处可以传入任何参数
+</script>
+<script language="javascript" src="http://stat.it168.com/pv.js"></script>
+<script>
+function sendPV(){
+    var pvTrack = new PvTrack();
+    pvTrack.type = 35; // 频道类别ID
+    pvTrack.channel = 189; // 频道ID
+    pvTrack.pageType = 0;
+    pvTrack.track();
+}
+window.setTimeout("sendPV()", 1000);
+</script>
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-20237423-2']);
+  _gaq.push(['_setDomainName', '.chinaunix.net']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+<script type="text/javascript">
+var _bdhmProtocol = (("https:" == document.location.protocol) ? " https://" : " http://");
+document.write(unescape("%3Cscript src='" + _bdhmProtocol + "hm.baidu.com/h.js%3F0ee5e8cdc4d43389b3d1bfd76e83216b' type='text/javascript'%3E%3C/script%3E"));
+</script>
+<script type="text/javascript" src="/js/jquery.qqFace.js"></script>
+</body>
+</html>

@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<!--[if IE 6]>
+<html id="ie6" lang="en-US">
+<![endif]-->
+<!--[if IE 7]>
+<html id="ie7" lang="en-US">
+<![endif]-->
+<!--[if IE 8]>
+<html id="ie8" lang="en-US">
+<![endif]-->
+<!--[if !(IE 6) | !(IE 7) | !(IE 8)  ]><!-->
+<html lang="en-US">
+<!--<![endif]-->
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width" />
+<title>v4l2grab &#8211; Grabbing JPEGs from V4L2 devices</title>
+<link rel="stylesheet" type="text/css" media="all" href="http://fast.fonts.com/cssapi/b8b64bde-1ee2-43e2-aed1-af9f27109e1c.css"/>
+<link rel="stylesheet" type="text/css" media="all" href="http://www.twam.info/wp-content/themes/twam2013/style.css" />
+<link rel="pingback" href="http://www.twam.info/xmlrpc.php" />
+<!--[if lt IE 9]>
+<script src="http://www.twam.info/wp-content/themes/twam2013/js/html5.js" type="text/javascript"></script>
+<![endif]-->
+<link rel="alternate" type="application/rss+xml" title="twam.info &raquo; Feed" href="http://www.twam.info/feed" />
+<link rel="alternate" type="application/rss+xml" title="twam.info &raquo; Comments Feed" href="http://www.twam.info/comments/feed" />
+
+            <script type="text/javascript">//<![CDATA[
+            // Google Analytics for WordPress by Yoast v4.3.3 | http://yoast.com/wordpress/google-analytics/
+            var _gaq = _gaq || [];
+            _gaq.push(['_setAccount', 'UA-7988949-1']);
+				            _gaq.push(['_setDomainName','www.twam.info'],['_trackPageview']);
+            (function () {
+                var ga = document.createElement('script');
+                ga.type = 'text/javascript';
+                ga.async = true;
+                ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+
+                var s = document.getElementsByTagName('script')[0];
+                s.parentNode.insertBefore(ga, s);
+            })();
+            //]]></script>
+			<link rel="alternate" type="application/rss+xml" title="twam.info &raquo; v4l2grab &#8211; Grabbing JPEGs from V4L2 devices Comments Feed" href="http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices/feed" />
+<link rel='stylesheet' id='prettify-css'  href='http://www.twam.info/wp-content/plugins/prettify-code-syntax/stylesheets/bootstrap.css?ver=3.5.1' type='text/css' media='all' />
+<script type='text/javascript' src='http://www.twam.info/wp-includes/js/comment-reply.min.js?ver=3.5.1'></script>
+<script type='text/javascript' src='http://www.twam.info/wp-includes/js/jquery/jquery.js?ver=1.8.3'></script>
+<link rel="EditURI" type="application/rsd+xml" title="RSD" href="http://www.twam.info/xmlrpc.php?rsd" />
+<link rel="wlwmanifest" type="application/wlwmanifest+xml" href="http://www.twam.info/wp-includes/wlwmanifest.xml" /> 
+<link rel='prev' title='WebCam montiert' href='http://www.twam.info/hardware/webcam-montiert' />
+<link rel='next' title='New hardware gadget: ALIX.3D3' href='http://www.twam.info/hardware/alix/alix3d3' />
+<meta name="generator" content="WordPress 3.5.1" />
+<link rel='shortlink' href='http://www.twam.info/?p=276' />
+
+<!-- All in One SEO Pack 2.0 by Michael Torbert of Semper Fi Web Design[355,423] -->
+<meta name="description" content="A friend of mine, wanted to use a standard USB WebCam as an IPCam. He used an old Media-Receiver Box (T-Online S100) and installed Gentoo Linux on an CF" />
+
+<link rel="canonical" href="http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices" />
+<!-- /all in one seo pack -->
+	<style type="text/css">
+			#site-title a,
+		#site-description {
+			color: # !important;
+		}
+		</style>
+	<style type="text/css" id="custom-background-css">
+body.custom-background { background-color: #e2e2e2; }
+</style>
+</head>
+
+<body class="single single-post postid-276 single-format-standard custom-background single-author singular two-column right-sidebar">
+<div id="page" class="hfeed">
+	<header id="branding" role="banner">
+			<hgroup>
+				<h1 id="site-title"><span><a href="http://www.twam.info/" title="twam.info" rel="home">twam.info</a></span></h1>
+				<h2 id="site-description">My computer, physics, electronics &amp; photography blog</h2>
+			</hgroup>
+
+			
+								<form method="get" id="searchform" action="http://www.twam.info/">
+		<label for="s" class="assistive-text">Search</label>
+		<input type="text" class="field" name="s" id="s" placeholder="Search" />
+		<input type="submit" class="submit" name="submit" id="searchsubmit" value="Search" />
+	</form>
+						<nav id="access" role="navigation">
+				<h3 class="assistive-text">Main menu</h3>
+								<div class="skip-link"><a class="assistive-text" href="#content" title="Skip to primary content">Skip to primary content</a></div>
+				<div class="skip-link"><a class="assistive-text" href="#secondary" title="Skip to secondary content">Skip to secondary content</a></div>
+								<div class="menu-mainmenu-container"><ul id="menu-mainmenu" class="menu"><li id="menu-item-1751" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-home menu-item-1751"><a href="http://www.twam.info/">Home</a></li>
+<li id="menu-item-1749" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1749"><a href="http://www.twam.info/about_me">About me</a></li>
+<li id="menu-item-1762" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1762"><a href="http://www.twam.info/work">Work</a></li>
+<li id="menu-item-1748" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1748"><a href="http://www.twam.info/webcam">WebCam</a></li>
+<li id="menu-item-1750" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1750"><a href="http://www.twam.info/imprint">Imprint</a></li>
+<li id="menu-item-2634" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-2634"><a href="https://www.facebook.com/twamueller">Facebook</a></li>
+<li id="menu-item-2633" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-2633"><a href="https://twitter.com/twamueller">Twitter</a></li>
+<li id="menu-item-2681" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-2681"><a href="https://alpha.app.net/twam">App.net</a></li>
+</ul></div>			</nav><!-- #access -->
+	</header><!-- #branding -->
+
+
+	<div id="main">
+
+		<div id="primary">
+			<div id="content" role="main">
+
+				
+					<nav id="nav-single">
+						<h3 class="assistive-text">Post navigation</h3>
+						<span class="nav-previous"><a href="http://www.twam.info/hardware/webcam-montiert" rel="prev"><span class="meta-nav">&larr;</span> Previous</a></span>
+						<span class="nav-next"><a href="http://www.twam.info/hardware/alix/alix3d3" rel="next">Next <span class="meta-nav">&rarr;</span></a></span>
+					</nav><!-- #nav-single -->
+
+					
+<article id="post-276" class="post-276 post type-post status-publish format-standard hentry category-linux category-software tag-v4l2 tag-webcam">
+	<header class="entry-header">
+		<h1 class="entry-title">v4l2grab &#8211; Grabbing JPEGs from V4L2 devices</h1>
+
+				<div class="entry-meta">
+			<span class="sep">Posted on </span><a href="http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices" title="15:01" rel="bookmark"><time class="entry-date" datetime="2009-04-23T15:01:51+00:00">April 23, 2009</time></a><span class="by-author"> <span class="sep"> by </span> <span class="author vcard"><a class="url fn n" href="http://www.twam.info/author/twam" title="View all posts by twam" rel="author">twam</a></span></span>		</div><!-- .entry-meta -->
+			</header><!-- .entry-header -->
+
+	<div class="entry-content">
+		<p>A friend of mine, wanted to use a standard USB WebCam as an IPCam. He used an old Media-Receiver Box (<a href="http://wiki.freifunk-hannover.de/T-Online_S_100">T-Online S100</a>) and installed Gentoo Linux on an CF Card.</p>
+<p>Since Kernel 2.6.27 most of the USB webcams are supported through the Linux UVC drivers, which provides an Video4Linux2 Interface to those cams. We found some programs who claimed being able to grab JPEG images from V4L2 Cams, but most of them either didn&#8217;t compile, supported only V4L Version 1 or just brought up some other errors.</p>
+<p>So I checked up the <a href="http://v4l2spec.bytesex.org/spec/">Video for Linux Two API Specification</a> and found there in Appendix B a small sample of howto communicate with the Cam. I adapted it to our needs and included an converter from <a href="http://en.wikipedia.org/wiki/YUV">YUV</a> colorspace to <a href="http://en.wikipedia.org/wiki/RGB">RGB</a>. Finally I added some code to support the export of JPEG images.<span id="more-276"></span></p>
+<p>You can download it here: <a href="http://www.twam.info/wp-content/uploads/2009/04/v4l2grab.c">v4l2grab Version 0.1</a></p>
+<p>The whole program is written in C and only needs <a href="http://www.ijg.org/">libjpeg</a> to compile. There are different ways to communicate with the camera, if you want to support all, you should go best with:</p>
+<pre>gcc v4l2grab.c -o v4l2grab -Wall -ljpeg -DIO_READ -DIO_MMAP -DIO_USERPTR</pre>
+<p>If you compiled the program, you can get some images with:</p>
+<pre>./v4l2grab -o image.jpg</pre>
+<p>With -W width -H height its possible to adjust the size of the image. If the camera doesn&#8217;t support the resolution the programs adjusts it automatically and prints an information on stderr.</p>
+<p><strong>The current version of V4L2grab can be found on <a href="http://github.com/twam/v4l2grab/tree/master">github</a>.</strong> </p>
+			</div><!-- .entry-content -->
+
+	<footer class="entry-meta">
+		This entry was posted in <a href="http://www.twam.info/category/linux" title="View all posts in Linux" rel="category tag">Linux</a>, <a href="http://www.twam.info/category/software" title="View all posts in Software" rel="category tag">Software</a> and tagged <a href="http://www.twam.info/tag/v4l2" rel="tag">V4L2</a>, <a href="http://www.twam.info/tag/webcam" rel="tag">WebCam</a> by <a href="http://www.twam.info/author/twam">twam</a>. Bookmark the <a href="http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices" title="Permalink to v4l2grab &#8211; Grabbing JPEGs from V4L2 devices" rel="bookmark">permalink</a>.		
+				<div id="author-info">
+			<div id="author-avatar">
+				<img alt='' src='http://1.gravatar.com/avatar/f1f1b5a4161ee3e457fdb791257f76a3?s=68&amp;d=http%3A%2F%2F1.gravatar.com%2Favatar%2Fad516503a11cd5ca435acc9bb6523536%3Fs%3D68&amp;r=G' class='avatar avatar-68 photo' height='68' width='68' />			</div><!-- #author-avatar -->
+			<div id="author-description">
+								<h2>About the author</h2>
+				My name is Tobias Müller and I'm cur&shy;rent&shy;ly working on my PhD in theo&shy;re&shy;ti&shy;cal astro&shy;physics. I'm interested in com&shy;puters, physics, elec&shy;tronics and photo&shy;graphy. <a href="http://www.twam.info/about_me" rel="nofollow">more …</a>							</div><!-- #author-description -->
+		</div><!-- #author-info -->
+		
+		<div class="social">
+	<ul class="social">
+		<li><span class="flattr">
+	<span class="flattr">
+		<script type="text/javascript">
+			var flattr_uid  = '36990';
+			var flattr_url  = 'http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices';
+			var flattr_tle  = 'v4l2grab &amp;#8211; Grabbing JPEGs from V4L2 devices';
+			var flattr_dsc  = 'A friend of mine, wanted to use a standard USB WebCam as an IPCam. He used an old Media-Receiver Box (T-Online S100) and installed Gentoo Linux on an CF Card. Since Kernel 2.6.27 most of the USB webcams are supported &amp;hellip; Continue reading &amp;rarr;';
+			var flattr_cat  = 'text';
+			var flattr_lng  = 'en_GB';
+			var flattr_tag  = 'V4L2, WebCam';
+			var flattr_btn  = 'compact';
+			var flattr_hide = 0;
+		</script>
+		<script src="http://api.flattr.com/button/load.js" type="text/javascript"></script>
+	</span>
+	</span></li>
+		<li><span class="twitter"><a href="http://twitter.com/share" class="twitter-share-button" data-count="none" data-via="twamueller">Tweet</a><script type="text/javascript" src="http://platform.twitter.com/widgets.js"></script></span></li>
+		<li><span class="facebook"><a name="fb_share" type="button" href="http://www.facebook.com/sharer.php">Share</a><script src="http://static.ak.fbcdn.net/connect.php/js/FB.Share" type="text/javascript"></script></span></li>
+		<li><span class="pinterest"><a href="http://pinterest.com/pin/create/button/?url=http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices&media=&description=v4l2grab &#8211; Grabbing JPEGs from V4L2 devices" class="pin-it-button" count-layout="horizontal"><img border="0" src="//assets.pinterest.com/images/PinExt.png" title="Pin It" /></a></span></li>
+		<li><span class="googleplus"><g:plusone size="small"></g:plusone><script type="text/javascript"> (function() { var po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = 'https://apis.google.com/js/plusone.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s); })();</script></span></li>
+	</ul>
+</div>
+
+	</footer><!-- .entry-meta -->
+</article><!-- #post-276 -->
+
+						<div id="comments">
+	
+	
+			<h2 id="comments-title">
+			36 thoughts on &ldquo;<span>v4l2grab &#8211; Grabbing JPEGs from V4L2 devices</span>&rdquo;		</h2>
+
+		
+		<ol class="commentlist">
+				<li class="comment even thread-even depth-1" id="li-comment-342">
+		<article id="comment-342" class="comment">
+			<footer class="comment-meta">
+				<div class="comment-author vcard">
+					<img alt='' src='http://1.gravatar.com/avatar/bc7798381a2d11cd21b703d5ac09ca9e?s=68&amp;d=http%3A%2F%2F1.gravatar.com%2Favatar%2Fad516503a11cd5ca435acc9bb6523536%3Fs%3D68&amp;r=G' class='avatar avatar-68 photo' height='68' width='68' /><span class="fn">Roby</span> on <a href="http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices#comment-342"><time datetime="2010-10-02T19:00:33+00:00">October 2, 2010 at 19:00</time></a> <span class="says">said:</span>
+									</div><!-- .comment-author .vcard -->
+
+				
+			</footer>
+
+			<div class="comment-content"><p>I&#8217;m trying to use a webcam in V4L2_PIX_FMT_MJPEG format (not V4L2_PIX_FMT_YUYV) and grab image into jpeg files, some ideas on how do it?</p>
+</div>
+
+			<div class="reply">
+				<a class='comment-reply-link' href='/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices?replytocom=342#respond' onclick='return addComment.moveForm("comment-342", "342", "respond", "276")'>Reply <span>&darr;</span></a>			</div><!-- .reply -->
+		</article><!-- #comment-## -->
+
+	</li>
+	<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-2592">
+		<article id="comment-2592" class="comment">
+			<footer class="comment-meta">
+				<div class="comment-author vcard">
+					<img alt='' src='http://0.gravatar.com/avatar/6a7b3b7c26111dddd82a5bb57645ba69?s=68&amp;d=http%3A%2F%2F0.gravatar.com%2Favatar%2Fad516503a11cd5ca435acc9bb6523536%3Fs%3D68&amp;r=G' class='avatar avatar-68 photo' height='68' width='68' /><span class="fn">Frank</span> on <a href="http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices#comment-2592"><time datetime="2011-07-13T19:25:04+00:00">July 13, 2011 at 19:25</time></a> <span class="says">said:</span>
+									</div><!-- .comment-author .vcard -->
+
+				
+			</footer>
+
+			<div class="comment-content"><p>Hoi,</p>
+<p>Great work! It would be a good idea to add the compile statement to the readme file on github.<br />
+Works like a charm!</p>
+<p>Groeten,<br />
+Frank.</p>
+</div>
+
+			<div class="reply">
+				<a class='comment-reply-link' href='/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices?replytocom=2592#respond' onclick='return addComment.moveForm("comment-2592", "2592", "respond", "276")'>Reply <span>&darr;</span></a>			</div><!-- .reply -->
+		</article><!-- #comment-## -->
+
+	</li>
+	<li class="comment even thread-even depth-1" id="li-comment-2606">
+		<article id="comment-2606" class="comment">
+			<footer class="comment-meta">
+				<div class="comment-author vcard">
+					<img alt='' src='http://0.gravatar.com/avatar/695bb786a19b56d91ca99d2da0069614?s=68&amp;d=http%3A%2F%2F0.gravatar.com%2Favatar%2Fad516503a11cd5ca435acc9bb6523536%3Fs%3D68&amp;r=G' class='avatar avatar-68 photo' height='68' width='68' /><span class="fn">Jemiah</span> on <a href="http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices#comment-2606"><time datetime="2011-07-19T16:37:23+00:00">July 19, 2011 at 16:37</time></a> <span class="says">said:</span>
+									</div><!-- .comment-author .vcard -->
+
+				
+			</footer>
+
+			<div class="comment-content"><p>I just built this for the DM3730 Logic SOM running Linux built from the 2.6.32 OMAP PSP_03.00.01.06 kernel from TI.  I used libjpeg62-dev.  Worked right out of the box. Great work.</p>
+<p>Thanks,<br />
+Jemiah<br />
+.</p>
+</div>
+
+			<div class="reply">
+				<a class='comment-reply-link' href='/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices?replytocom=2606#respond' onclick='return addComment.moveForm("comment-2606", "2606", "respond", "276")'>Reply <span>&darr;</span></a>			</div><!-- .reply -->
+		</article><!-- #comment-## -->
+
+	</li>
+	<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-2770">
+		<article id="comment-2770" class="comment">
+			<footer class="comment-meta">
+				<div class="comment-author vcard">
+					<img alt='' src='http://0.gravatar.com/avatar/a6fb230d7aae67cdd9ac83468799d29e?s=68&amp;d=http%3A%2F%2F0.gravatar.com%2Favatar%2Fad516503a11cd5ca435acc9bb6523536%3Fs%3D68&amp;r=G' class='avatar avatar-68 photo' height='68' width='68' /><span class="fn">tommy liu</span> on <a href="http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices#comment-2770"><time datetime="2011-08-17T04:50:17+00:00">August 17, 2011 at 04:50</time></a> <span class="says">said:</span>
+									</div><!-- .comment-author .vcard -->
+
+				
+			</footer>
+
+			<div class="comment-content"><p>I was running v4l2grab on ARM with logitech C200.<br />
+Even set the format by using VIDIOC_S_FMT, I still get 176&#215;144 size of image.<br />
+I saw the notes in source as follow:<br />
+&#8216;Note VIDIOC_S_FMT may change width and height.&#8217;<br />
+Could you please share the more detail about this?</p>
+</div>
+
+			<div class="reply">
+				<a class='comment-reply-link' href='/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices?replytocom=2770#respond' onclick='return addComment.moveForm("comment-2770", "2770", "respond", "276")'>Reply <span>&darr;</span></a>			</div><!-- .reply -->
+		</article><!-- #comment-## -->
+
+	</li>
+	<li class="comment even thread-even depth-1" id="li-comment-3181">
+		<article id="comment-3181" class="comment">
+			<footer class="comment-meta">
+				<div class="comment-author vcard">
+					<img alt='' src='http://1.gravatar.com/avatar/76b3444ed9362a3bbeb3728aba58c4e3?s=68&amp;d=http%3A%2F%2F1.gravatar.com%2Favatar%2Fad516503a11cd5ca435acc9bb6523536%3Fs%3D68&amp;r=G' class='avatar avatar-68 photo' height='68' width='68' /><span class="fn">Anders</span> on <a href="http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices#comment-3181"><time datetime="2011-10-04T11:17:56+00:00">October 4, 2011 at 11:17</time></a> <span class="says">said:</span>
+									</div><!-- .comment-author .vcard -->
+
+				
+			</footer>
+
+			<div class="comment-content"><p>Hi,</p>
+<p>I&#8217;m trying to compile v4l2grab for an ARM processor and can see that some of you have already succeded in that. Could you please give me a step by step guide on how to accomplish this task? Thanks in advanced</p>
+<p>/Anders</p>
+</div>
+
+			<div class="reply">
+				<a class='comment-reply-link' href='/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices?replytocom=3181#respond' onclick='return addComment.moveForm("comment-3181", "3181", "respond", "276")'>Reply <span>&darr;</span></a>			</div><!-- .reply -->
+		</article><!-- #comment-## -->
+
+	</li>
+	<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-3731">
+		<article id="comment-3731" class="comment">
+			<footer class="comment-meta">
+				<div class="comment-author vcard">
+					<img alt='' src='http://1.gravatar.com/avatar/b16edbc4e2ddd78128f870bf283ef328?s=68&amp;d=http%3A%2F%2F1.gravatar.com%2Favatar%2Fad516503a11cd5ca435acc9bb6523536%3Fs%3D68&amp;r=G' class='avatar avatar-68 photo' height='68' width='68' /><span class="fn">Alexw</span> on <a href="http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices#comment-3731"><time datetime="2011-10-28T11:56:44+00:00">October 28, 2011 at 11:56</time></a> <span class="says">said:</span>
+									</div><!-- .comment-author .vcard -->
+
+				
+			</footer>
+
+			<div class="comment-content"><p><a href="#comment-3181" rel="nofollow">@Anders</a> </p>
+<p>On v5l ARM machine I have no compilation issue:</p>
+<p>gcc v4l2grab.c -o v4l2grab -Wall -ljpeg -DIO_READ -DIO_MMAP -DIO_USERPTR</p>
+</div>
+
+			<div class="reply">
+				<a class='comment-reply-link' href='/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices?replytocom=3731#respond' onclick='return addComment.moveForm("comment-3731", "3731", "respond", "276")'>Reply <span>&darr;</span></a>			</div><!-- .reply -->
+		</article><!-- #comment-## -->
+
+	</li>
+	<li class="comment even thread-even depth-1" id="li-comment-4730">
+		<article id="comment-4730" class="comment">
+			<footer class="comment-meta">
+				<div class="comment-author vcard">
+					<img alt='' src='http://0.gravatar.com/avatar/41aeb97ca1fde4e9b49f0e57d10e7acc?s=68&amp;d=http%3A%2F%2F0.gravatar.com%2Favatar%2Fad516503a11cd5ca435acc9bb6523536%3Fs%3D68&amp;r=G' class='avatar avatar-68 photo' height='68' width='68' /><span class="fn">Jonathan Andrews</span> on <a href="http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices#comment-4730"><time datetime="2012-02-04T18:17:33+00:00">February 4, 2012 at 18:17</time></a> <span class="says">said:</span>
+									</div><!-- .comment-author .vcard -->
+
+				
+			</footer>
+
+			<div class="comment-content"><p>This is a very useful little utility, nice code,  but has a stutter. </p>
+<p>I&#8217;ve added some debugging text</p>
+<pre>static void imageProcess(const void* p)
+{
+        unsigned char* src = (unsigned char*)p;
+        unsigned char* dst = malloc(width*height*3*sizeof(char));
+
+        // convert from YUV422 to RGB888
+printf("Munge\n"); fflush(stdout);
+        YUV422toRGB888(width,height,src,dst);
+
+        // write jpeg
+printf("Write\n"); fflush(stdout);
+        jpegWrite(dst);
+
+        // free temporary image
+        free(dst);
+}</pre>
+<pre># ./v4l2grab -m -o test.jpg
+1Open
+Init
+Start
+Frameread
+Frameread
+Munge
+Write
+Frameread
+Munge
+Write</pre>
+<p>Should it not read a frame once, process it once, and write t once ? <img src='http://www.twam.info/wp-includes/images/smilies/icon_smile.gif' alt=':-)' class='wp-smiley' /> </p>
+<p>Thanks,<br />
+Jon</p>
+</div>
+
+			<div class="reply">
+				<a class='comment-reply-link' href='/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices?replytocom=4730#respond' onclick='return addComment.moveForm("comment-4730", "4730", "respond", "276")'>Reply <span>&darr;</span></a>			</div><!-- .reply -->
+		</article><!-- #comment-## -->
+
+	</li>
+	<li class="comment byuser comment-author-twam bypostauthor odd alt thread-odd thread-alt depth-1" id="li-comment-4747">
+		<article id="comment-4747" class="comment">
+			<footer class="comment-meta">
+				<div class="comment-author vcard">
+					<img alt='' src='http://1.gravatar.com/avatar/f1f1b5a4161ee3e457fdb791257f76a3?s=68&amp;d=http%3A%2F%2F1.gravatar.com%2Favatar%2Fad516503a11cd5ca435acc9bb6523536%3Fs%3D68&amp;r=G' class='avatar avatar-68 photo' height='68' width='68' /><span class="fn"><a href='http://www.twam.info' rel='external nofollow' class='url'>twam</a></span> on <a href="http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices#comment-4747"><time datetime="2012-02-06T15:57:29+00:00">February 6, 2012 at 15:57</time></a> <span class="says">said:</span>
+									</div><!-- .comment-author .vcard -->
+
+				
+			</footer>
+
+			<div class="comment-content"><blockquote cite="#commentbody-4730"><p>
+<strong><a href="#comment-4730" rel="nofollow">Jonathan Andrews</a>:</strong><br />
+Should it not read a frame once, process it once, and write t once ?
+</p></blockquote>
+<p>The program is reading the frame again, when the read returned an EAGAIN error.</p>
+</div>
+
+			<div class="reply">
+				<a class='comment-reply-link' href='/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices?replytocom=4747#respond' onclick='return addComment.moveForm("comment-4747", "4747", "respond", "276")'>Reply <span>&darr;</span></a>			</div><!-- .reply -->
+		</article><!-- #comment-## -->
+
+	</li>
+	<li class="comment even thread-even depth-1" id="li-comment-4857">
+		<article id="comment-4857" class="comment">
+			<footer class="comment-meta">
+				<div class="comment-author vcard">
+					<img alt='' src='http://1.gravatar.com/avatar/b9aae58e4effa10d421699bf3fb26972?s=68&amp;d=http%3A%2F%2F1.gravatar.com%2Favatar%2Fad516503a11cd5ca435acc9bb6523536%3Fs%3D68&amp;r=G' class='avatar avatar-68 photo' height='68' width='68' /><span class="fn">Franz</span> on <a href="http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices#comment-4857"><time datetime="2012-02-15T17:33:17+00:00">February 15, 2012 at 17:33</time></a> <span class="says">said:</span>
+									</div><!-- .comment-author .vcard -->
+
+				
+			</footer>
+
+			<div class="comment-content"><p>Hallo Tobias,</p>
+<p>super kleines Tool. Genau was ich gerade gesucht habe, um nicht mit Kanonen auf Spatzen zu schiessen.<br />
+Runter laden, übersetzen und laufen lassen. Ohne Fehler; einfach so !!!</p>
+<p>Vielen Dank<br />
+Franz</p>
+</div>
+
+			<div class="reply">
+				<a class='comment-reply-link' href='/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices?replytocom=4857#respond' onclick='return addComment.moveForm("comment-4857", "4857", "respond", "276")'>Reply <span>&darr;</span></a>			</div><!-- .reply -->
+		</article><!-- #comment-## -->
+
+	</li>
+	<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-4858">
+		<article id="comment-4858" class="comment">
+			<footer class="comment-meta">
+				<div class="comment-author vcard">
+					<img alt='' src='http://1.gravatar.com/avatar/b9aae58e4effa10d421699bf3fb26972?s=68&amp;d=http%3A%2F%2F1.gravatar.com%2Favatar%2Fad516503a11cd5ca435acc9bb6523536%3Fs%3D68&amp;r=G' class='avatar avatar-68 photo' height='68' width='68' /><span class="fn">Franz</span> on <a href="http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices#comment-4858"><time datetime="2012-02-15T17:37:40+00:00">February 15, 2012 at 17:37</time></a> <span class="says">said:</span>
+									</div><!-- .comment-author .vcard -->
+
+				
+			</footer>
+
+			<div class="comment-content"><p>Was ich vergessen habe:</p>
+<p>I use OpenSuse 12.1  (64 Bit ) on AMD Quadcore 2,9 Ghz with USB &#8211; Logitech, Inc. Webcam C270 .</p>
+<p>Thanks<br />
+Franz</p>
+</div>
+
+			<div class="reply">
+				<a class='comment-reply-link' href='/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices?replytocom=4858#respond' onclick='return addComment.moveForm("comment-4858", "4858", "respond", "276")'>Reply <span>&darr;</span></a>			</div><!-- .reply -->
+		</article><!-- #comment-## -->
+
+	</li>
+	<li class="comment even thread-even depth-1" id="li-comment-5800">
+		<article id="comment-5800" class="comment">
+			<footer class="comment-meta">
+				<div class="comment-author vcard">
+					<img alt='' src='http://1.gravatar.com/avatar/3636001542e15fc065135bc840cf76c6?s=68&amp;d=http%3A%2F%2F1.gravatar.com%2Favatar%2Fad516503a11cd5ca435acc9bb6523536%3Fs%3D68&amp;r=G' class='avatar avatar-68 photo' height='68' width='68' /><span class="fn">vijay</span> on <a href="http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices#comment-5800"><time datetime="2012-04-19T06:39:34+00:00">April 19, 2012 at 06:39</time></a> <span class="says">said:</span>
+									</div><!-- .comment-author .vcard -->
+
+				
+			</footer>
+
+			<div class="comment-content"><p>/tmp/cc6gk2Pb.o: In function `imageProcess&#8217;:<br />
+v4l2grab.c:(.text+0&#215;258): undefined reference to `YUV422toRGB888&#8242;<br />
+collect2: ld returned 1 exit status</p>
+<p>i am getting this error when i compile the programme<br />
+please help to fix this problem</p>
+</div>
+
+			<div class="reply">
+				<a class='comment-reply-link' href='/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices?replytocom=5800#respond' onclick='return addComment.moveForm("comment-5800", "5800", "respond", "276")'>Reply <span>&darr;</span></a>			</div><!-- .reply -->
+		</article><!-- #comment-## -->
+
+	</li>
+	<li class="comment byuser comment-author-twam bypostauthor odd alt thread-odd thread-alt depth-1" id="li-comment-5803">
+		<article id="comment-5803" class="comment">
+			<footer class="comment-meta">
+				<div class="comment-author vcard">
+					<img alt='' src='http://1.gravatar.com/avatar/f1f1b5a4161ee3e457fdb791257f76a3?s=68&amp;d=http%3A%2F%2F1.gravatar.com%2Favatar%2Fad516503a11cd5ca435acc9bb6523536%3Fs%3D68&amp;r=G' class='avatar avatar-68 photo' height='68' width='68' /><span class="fn"><a href='http://www.twam.info' rel='external nofollow' class='url'>twam</a></span> on <a href="http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices#comment-5803"><time datetime="2012-04-19T09:49:25+00:00">April 19, 2012 at 09:49</time></a> <span class="says">said:</span>
+									</div><!-- .comment-author .vcard -->
+
+				
+			</footer>
+
+			<div class="comment-content"><p><a href="#comment-5800" rel="nofollow">@vijay</a><br />
+It look like you tried to compile it with the line given in the post above. The latest version supplies a makefile, so you just have to run &#8216;make&#8217; to compile the program.</p>
+</div>
+
+			<div class="reply">
+				<a class='comment-reply-link' href='/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices?replytocom=5803#respond' onclick='return addComment.moveForm("comment-5803", "5803", "respond", "276")'>Reply <span>&darr;</span></a>			</div><!-- .reply -->
+		</article><!-- #comment-## -->
+
+	</li>
+	<li class="comment even thread-even depth-1" id="li-comment-6111">
+		<article id="comment-6111" class="comment">
+			<footer class="comment-meta">
+				<div class="comment-author vcard">
+					<img alt='' src='http://0.gravatar.com/avatar/06642d7ef9ef97d91bf0ac7c54e9a693?s=68&amp;d=http%3A%2F%2F0.gravatar.com%2Favatar%2Fad516503a11cd5ca435acc9bb6523536%3Fs%3D68&amp;r=G' class='avatar avatar-68 photo' height='68' width='68' /><span class="fn">soda</span> on <a href="http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices#comment-6111"><time datetime="2012-05-18T08:51:21+00:00">May 18, 2012 at 08:51</time></a> <span class="says">said:</span>
+									</div><!-- .comment-author .vcard -->
+
+				
+			</footer>
+
+			<div class="comment-content"><p>Thanks for sharing this example, it was very helpful! Moreover, work out of the box <img src='http://www.twam.info/wp-includes/images/smilies/icon_wink.gif' alt=';)' class='wp-smiley' />  Thanks again Tobias.</p>
+</div>
+
+			<div class="reply">
+				<a class='comment-reply-link' href='/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices?replytocom=6111#respond' onclick='return addComment.moveForm("comment-6111", "6111", "respond", "276")'>Reply <span>&darr;</span></a>			</div><!-- .reply -->
+		</article><!-- #comment-## -->
+
+	</li>
+	<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-6115">
+		<article id="comment-6115" class="comment">
+			<footer class="comment-meta">
+				<div class="comment-author vcard">
+					<img alt='' src='http://1.gravatar.com/avatar/9eac559b789683ececa4d52a1470fb9f?s=68&amp;d=http%3A%2F%2F1.gravatar.com%2Favatar%2Fad516503a11cd5ca435acc9bb6523536%3Fs%3D68&amp;r=G' class='avatar avatar-68 photo' height='68' width='68' /><span class="fn">Owen</span> on <a href="http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices#comment-6115"><time datetime="2012-05-18T20:06:19+00:00">May 18, 2012 at 20:06</time></a> <span class="says">said:</span>
+									</div><!-- .comment-author .vcard -->
+
+				
+			</footer>
+
+			<div class="comment-content"><p>This runs without error:<br />
+    # gcc v4l2grab.c -o v4l2grab -Wall -ljpeg -DIO_READ -DIO_MMAP -DIO_USERPTR</p>
+<p>But I am getting a &#8220;select timeout&#8221; error when I run the following (on a BeagleBone Armv7 processor)<br />
+# ./v4l2grab -o image.jpg</p>
+</div>
+
+			<div class="reply">
+				<a class='comment-reply-link' href='/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices?replytocom=6115#respond' onclick='return addComment.moveForm("comment-6115", "6115", "respond", "276")'>Reply <span>&darr;</span></a>			</div><!-- .reply -->
+		</article><!-- #comment-## -->
+
+	</li>
+	<li class="comment byuser comment-author-twam bypostauthor even thread-even depth-1" id="li-comment-6124">
+		<article id="comment-6124" class="comment">
+			<footer class="comment-meta">
+				<div class="comment-author vcard">
+					<img alt='' src='http://1.gravatar.com/avatar/f1f1b5a4161ee3e457fdb791257f76a3?s=68&amp;d=http%3A%2F%2F1.gravatar.com%2Favatar%2Fad516503a11cd5ca435acc9bb6523536%3Fs%3D68&amp;r=G' class='avatar avatar-68 photo' height='68' width='68' /><span class="fn"><a href='http://www.twam.info' rel='external nofollow' class='url'>twam</a></span> on <a href="http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices#comment-6124"><time datetime="2012-05-20T11:34:12+00:00">May 20, 2012 at 11:34</time></a> <span class="says">said:</span>
+									</div><!-- .comment-author .vcard -->
+
+				
+			</footer>
+
+			<div class="comment-content"><p><a href="#comment-6115" rel="nofollow">@Owen</a><br />
+Did you try the latest version from github? Because this you would have to compile using its makefile.</p>
+</div>
+
+			<div class="reply">
+				<a class='comment-reply-link' href='/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices?replytocom=6124#respond' onclick='return addComment.moveForm("comment-6124", "6124", "respond", "276")'>Reply <span>&darr;</span></a>			</div><!-- .reply -->
+		</article><!-- #comment-## -->
+
+	</li>
+	<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-6163">
+		<article id="comment-6163" class="comment">
+			<footer class="comment-meta">
+				<div class="comment-author vcard">
+					<img alt='' src='http://1.gravatar.com/avatar/9eac559b789683ececa4d52a1470fb9f?s=68&amp;d=http%3A%2F%2F1.gravatar.com%2Favatar%2Fad516503a11cd5ca435acc9bb6523536%3Fs%3D68&amp;r=G' class='avatar avatar-68 photo' height='68' width='68' /><span class="fn">Owen</span> on <a href="http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices#comment-6163"><time datetime="2012-05-23T15:48:59+00:00">May 23, 2012 at 15:48</time></a> <span class="says">said:</span>
+									</div><!-- .comment-author .vcard -->
+
+				
+			</footer>
+
+			<div class="comment-content"><p><a href="#comment-6124" rel="nofollow">@twam</a> The latest version from Github gives me the following error:</p>
+<pre># make
+gcc v4l2grab.c -c -Wall -march=native -Werror
+cc1: error: bad value (native) for -march switch
+make: *** [v4l2grab.o] Error 1</pre>
+</div>
+
+			<div class="reply">
+				<a class='comment-reply-link' href='/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices?replytocom=6163#respond' onclick='return addComment.moveForm("comment-6163", "6163", "respond", "276")'>Reply <span>&darr;</span></a>			</div><!-- .reply -->
+		</article><!-- #comment-## -->
+
+	</li>
+	<li class="comment byuser comment-author-twam bypostauthor even thread-even depth-1" id="li-comment-6164">
+		<article id="comment-6164" class="comment">
+			<footer class="comment-meta">
+				<div class="comment-author vcard">
+					<img alt='' src='http://1.gravatar.com/avatar/f1f1b5a4161ee3e457fdb791257f76a3?s=68&amp;d=http%3A%2F%2F1.gravatar.com%2Favatar%2Fad516503a11cd5ca435acc9bb6523536%3Fs%3D68&amp;r=G' class='avatar avatar-68 photo' height='68' width='68' /><span class="fn"><a href='http://www.twam.info' rel='external nofollow' class='url'>twam</a></span> on <a href="http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices#comment-6164"><time datetime="2012-05-23T20:17:56+00:00">May 23, 2012 at 20:17</time></a> <span class="says">said:</span>
+									</div><!-- .comment-author .vcard -->
+
+				
+			</footer>
+
+			<div class="comment-content"><p><a href="#comment-6163" rel="nofollow">@Owen</a><br />
+Just try to remove the -march=native inside the makefile as this might be not support on old gcc versions.</p>
+</div>
+
+			<div class="reply">
+				<a class='comment-reply-link' href='/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices?replytocom=6164#respond' onclick='return addComment.moveForm("comment-6164", "6164", "respond", "276")'>Reply <span>&darr;</span></a>			</div><!-- .reply -->
+		</article><!-- #comment-## -->
+
+	</li>
+	<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-6168">
+		<article id="comment-6168" class="comment">
+			<footer class="comment-meta">
+				<div class="comment-author vcard">
+					<img alt='' src='http://1.gravatar.com/avatar/9eac559b789683ececa4d52a1470fb9f?s=68&amp;d=http%3A%2F%2F1.gravatar.com%2Favatar%2Fad516503a11cd5ca435acc9bb6523536%3Fs%3D68&amp;r=G' class='avatar avatar-68 photo' height='68' width='68' /><span class="fn">Owen</span> on <a href="http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices#comment-6168"><time datetime="2012-05-24T02:45:39+00:00">May 24, 2012 at 02:45</time></a> <span class="says">said:</span>
+									</div><!-- .comment-author .vcard -->
+
+				
+			</footer>
+
+			<div class="comment-content"><p><a href="#comment-6164" rel="nofollow">@twam</a> I was able to compile and run ./v4l2grab -o image.jpg without errors but I can&#8217;t seem to locate any produced image files.</p>
+</div>
+
+			<div class="reply">
+				<a class='comment-reply-link' href='/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices?replytocom=6168#respond' onclick='return addComment.moveForm("comment-6168", "6168", "respond", "276")'>Reply <span>&darr;</span></a>			</div><!-- .reply -->
+		</article><!-- #comment-## -->
+
+	</li>
+	<li class="comment even thread-even depth-1" id="li-comment-7847">
+		<article id="comment-7847" class="comment">
+			<footer class="comment-meta">
+				<div class="comment-author vcard">
+					<img alt='' src='http://0.gravatar.com/avatar/22aac62b6428d7c4531eb7f5c992a842?s=68&amp;d=http%3A%2F%2F0.gravatar.com%2Favatar%2Fad516503a11cd5ca435acc9bb6523536%3Fs%3D68&amp;r=G' class='avatar avatar-68 photo' height='68' width='68' /><span class="fn">halo</span> on <a href="http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices#comment-7847"><time datetime="2012-08-28T22:13:21+00:00">August 28, 2012 at 22:13</time></a> <span class="says">said:</span>
+									</div><!-- .comment-author .vcard -->
+
+				
+			</footer>
+
+			<div class="comment-content"><p>How can I install the libjpeg?</p>
+</div>
+
+			<div class="reply">
+				<a class='comment-reply-link' href='/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices?replytocom=7847#respond' onclick='return addComment.moveForm("comment-7847", "7847", "respond", "276")'>Reply <span>&darr;</span></a>			</div><!-- .reply -->
+		</article><!-- #comment-## -->
+
+	</li>
+	<li class="comment byuser comment-author-twam bypostauthor odd alt thread-odd thread-alt depth-1" id="li-comment-7854">
+		<article id="comment-7854" class="comment">
+			<footer class="comment-meta">
+				<div class="comment-author vcard">
+					<img alt='' src='http://1.gravatar.com/avatar/f1f1b5a4161ee3e457fdb791257f76a3?s=68&amp;d=http%3A%2F%2F1.gravatar.com%2Favatar%2Fad516503a11cd5ca435acc9bb6523536%3Fs%3D68&amp;r=G' class='avatar avatar-68 photo' height='68' width='68' /><span class="fn"><a href='http://www.twam.info' rel='external nofollow' class='url'>twam</a></span> on <a href="http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices#comment-7854"><time datetime="2012-08-29T10:13:25+00:00">August 29, 2012 at 10:13</time></a> <span class="says">said:</span>
+									</div><!-- .comment-author .vcard -->
+
+				
+			</footer>
+
+			<div class="comment-content"><p><a href="#comment-7847" rel="nofollow">@halo</a><br />
+You can either use the packet manager of your distribution or download it from the <a href="http://libjpeg.sourceforge.net/" rel="nofollow">project page</a> and compile/install it manually.</p>
+</div>
+
+			<div class="reply">
+				<a class='comment-reply-link' href='/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices?replytocom=7854#respond' onclick='return addComment.moveForm("comment-7854", "7854", "respond", "276")'>Reply <span>&darr;</span></a>			</div><!-- .reply -->
+		</article><!-- #comment-## -->
+
+	</li>
+	<li class="comment even thread-even depth-1" id="li-comment-7859">
+		<article id="comment-7859" class="comment">
+			<footer class="comment-meta">
+				<div class="comment-author vcard">
+					<img alt='' src='http://0.gravatar.com/avatar/22aac62b6428d7c4531eb7f5c992a842?s=68&amp;d=http%3A%2F%2F0.gravatar.com%2Favatar%2Fad516503a11cd5ca435acc9bb6523536%3Fs%3D68&amp;r=G' class='avatar avatar-68 photo' height='68' width='68' /><span class="fn">halo</span> on <a href="http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices#comment-7859"><time datetime="2012-08-29T22:22:05+00:00">August 29, 2012 at 22:22</time></a> <span class="says">said:</span>
+									</div><!-- .comment-author .vcard -->
+
+				
+			</footer>
+
+			<div class="comment-content"><p>hi again.<br />
+I believe to compile libjped. the screen gave this message</p>
+<pre>halil@toshiba:~/İndirilenler/jpeg-8d$ ./configure 
+checking build system type... i686-pc-linux-gnu
+[...]
+config.status: executing libtool commands</pre>
+<p>But I tried to work gcc v4l2grab.c -o v4l2grab -Wall -ljpeg -DIO_READ -DIO_MMAP -DIO_USERPTR and I gave this error message </p>
+<pre>v4l2grab.c:26:2: error: #error You have to include one of IO_READ, IO_MMAP oder IO_USERPTR!
+v4l2grab.c:45:21: error: jpeglib.h: Böyle bir dosya ya da dizin yok
+[...]</pre>
+<p>Can you help me about this issue. what do I do? thanks you for your helps</p>
+</div>
+
+			<div class="reply">
+				<a class='comment-reply-link' href='/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices?replytocom=7859#respond' onclick='return addComment.moveForm("comment-7859", "7859", "respond", "276")'>Reply <span>&darr;</span></a>			</div><!-- .reply -->
+		</article><!-- #comment-## -->
+
+	</li>
+	<li class="comment byuser comment-author-twam bypostauthor odd alt thread-odd thread-alt depth-1" id="li-comment-7906">
+		<article id="comment-7906" class="comment">
+			<footer class="comment-meta">
+				<div class="comment-author vcard">
+					<img alt='' src='http://1.gravatar.com/avatar/f1f1b5a4161ee3e457fdb791257f76a3?s=68&amp;d=http%3A%2F%2F1.gravatar.com%2Favatar%2Fad516503a11cd5ca435acc9bb6523536%3Fs%3D68&amp;r=G' class='avatar avatar-68 photo' height='68' width='68' /><span class="fn"><a href='http://www.twam.info' rel='external nofollow' class='url'>twam</a></span> on <a href="http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices#comment-7906"><time datetime="2012-09-03T21:38:00+00:00">September 3, 2012 at 21:38</time></a> <span class="says">said:</span>
+									</div><!-- .comment-author .vcard -->
+
+				
+			</footer>
+
+			<div class="comment-content"><p><a href="#comment-7859" rel="nofollow">@halo</a><br />
+After running configure, you usually need to run make; make install. Detailed information should be found in the README.</p>
+<p>But you should think of installing it through your distributions package manager. There should be something like a libjpeg-dev package.</p>
+</div>
+
+			<div class="reply">
+				<a class='comment-reply-link' href='/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices?replytocom=7906#respond' onclick='return addComment.moveForm("comment-7906", "7906", "respond", "276")'>Reply <span>&darr;</span></a>			</div><!-- .reply -->
+		</article><!-- #comment-## -->
+
+	</li>
+	<li class="comment even thread-even depth-1" id="li-comment-9162">
+		<article id="comment-9162" class="comment">
+			<footer class="comment-meta">
+				<div class="comment-author vcard">
+					<img alt='' src='http://1.gravatar.com/avatar/ba646a58ba8b179dd866ab0b60280835?s=68&amp;d=http%3A%2F%2F1.gravatar.com%2Favatar%2Fad516503a11cd5ca435acc9bb6523536%3Fs%3D68&amp;r=G' class='avatar avatar-68 photo' height='68' width='68' /><span class="fn">Jedisun</span> on <a href="http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices#comment-9162"><time datetime="2013-01-09T08:54:12+00:00">January 9, 2013 at 08:54</time></a> <span class="says">said:</span>
+									</div><!-- .comment-author .vcard -->
+
+				
+			</footer>
+
+			<div class="comment-content"><p>Hi @twan,<br />
+I compiled this app successful, and when I ran it with<br />
+# ./v4l2grab -d /dev/video0 -o out.jpg<br />
+and the only thing I&#8217;v got is<br />
+Using pixel format V4L2_PIX_FMT_YUYV.<br />
+and no any output images. Can you please help me out here? Thx.</p>
+</div>
+
+			<div class="reply">
+				<a class='comment-reply-link' href='/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices?replytocom=9162#respond' onclick='return addComment.moveForm("comment-9162", "9162", "respond", "276")'>Reply <span>&darr;</span></a>			</div><!-- .reply -->
+		</article><!-- #comment-## -->
+
+	</li>
+	<li class="comment byuser comment-author-twam bypostauthor odd alt thread-odd thread-alt depth-1" id="li-comment-9164">
+		<article id="comment-9164" class="comment">
+			<footer class="comment-meta">
+				<div class="comment-author vcard">
+					<img alt='' src='http://1.gravatar.com/avatar/f1f1b5a4161ee3e457fdb791257f76a3?s=68&amp;d=http%3A%2F%2F1.gravatar.com%2Favatar%2Fad516503a11cd5ca435acc9bb6523536%3Fs%3D68&amp;r=G' class='avatar avatar-68 photo' height='68' width='68' /><span class="fn"><a href='http://www.twam.info' rel='external nofollow' class='url'>twam</a></span> on <a href="http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices#comment-9164"><time datetime="2013-01-09T10:03:25+00:00">January 9, 2013 at 10:03</time></a> <span class="says">said:</span>
+									</div><!-- .comment-author .vcard -->
+
+				
+			</footer>
+
+			<div class="comment-content"><p><a href="#comment-9162" rel="nofollow">@Jedisun</a><br />
+No other output at all? If the program cannot write to the output there should be an error output.</p>
+</div>
+
+			<div class="reply">
+				<a class='comment-reply-link' href='/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices?replytocom=9164#respond' onclick='return addComment.moveForm("comment-9164", "9164", "respond", "276")'>Reply <span>&darr;</span></a>			</div><!-- .reply -->
+		</article><!-- #comment-## -->
+
+	</li>
+	<li class="comment even thread-even depth-1" id="li-comment-9165">
+		<article id="comment-9165" class="comment">
+			<footer class="comment-meta">
+				<div class="comment-author vcard">
+					<img alt='' src='http://1.gravatar.com/avatar/ba646a58ba8b179dd866ab0b60280835?s=68&amp;d=http%3A%2F%2F1.gravatar.com%2Favatar%2Fad516503a11cd5ca435acc9bb6523536%3Fs%3D68&amp;r=G' class='avatar avatar-68 photo' height='68' width='68' /><span class="fn">Jedisun</span> on <a href="http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices#comment-9165"><time datetime="2013-01-09T10:41:29+00:00">January 9, 2013 at 10:41</time></a> <span class="says">said:</span>
+									</div><!-- .comment-author .vcard -->
+
+				
+			</footer>
+
+			<div class="comment-content"><p>@twam<br />
+No other ouput, and the app is pending so I have to use ctrl-c to exit.</p>
+</div>
+
+			<div class="reply">
+				<a class='comment-reply-link' href='/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices?replytocom=9165#respond' onclick='return addComment.moveForm("comment-9165", "9165", "respond", "276")'>Reply <span>&darr;</span></a>			</div><!-- .reply -->
+		</article><!-- #comment-## -->
+
+	</li>
+	<li class="comment byuser comment-author-twam bypostauthor odd alt thread-odd thread-alt depth-1" id="li-comment-9166">
+		<article id="comment-9166" class="comment">
+			<footer class="comment-meta">
+				<div class="comment-author vcard">
+					<img alt='' src='http://1.gravatar.com/avatar/f1f1b5a4161ee3e457fdb791257f76a3?s=68&amp;d=http%3A%2F%2F1.gravatar.com%2Favatar%2Fad516503a11cd5ca435acc9bb6523536%3Fs%3D68&amp;r=G' class='avatar avatar-68 photo' height='68' width='68' /><span class="fn"><a href='http://www.twam.info' rel='external nofollow' class='url'>twam</a></span> on <a href="http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices#comment-9166"><time datetime="2013-01-09T10:43:01+00:00">January 9, 2013 at 10:43</time></a> <span class="says">said:</span>
+									</div><!-- .comment-author .vcard -->
+
+				
+			</footer>
+
+			<div class="comment-content"><p><a href="#comment-9165" rel="nofollow">@Jedisun</a><br />
+Then the app is waiting for images from the webcam. Do you get images from the webcam in other apps thru the v4l2 API, e.g. mplayer?</p>
+</div>
+
+			<div class="reply">
+				<a class='comment-reply-link' href='/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices?replytocom=9166#respond' onclick='return addComment.moveForm("comment-9166", "9166", "respond", "276")'>Reply <span>&darr;</span></a>			</div><!-- .reply -->
+		</article><!-- #comment-## -->
+
+	</li>
+	<li class="comment even thread-even depth-1" id="li-comment-9167">
+		<article id="comment-9167" class="comment">
+			<footer class="comment-meta">
+				<div class="comment-author vcard">
+					<img alt='' src='http://1.gravatar.com/avatar/ba646a58ba8b179dd866ab0b60280835?s=68&amp;d=http%3A%2F%2F1.gravatar.com%2Favatar%2Fad516503a11cd5ca435acc9bb6523536%3Fs%3D68&amp;r=G' class='avatar avatar-68 photo' height='68' width='68' /><span class="fn">Jedisun</span> on <a href="http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices#comment-9167"><time datetime="2013-01-09T10:48:41+00:00">January 9, 2013 at 10:48</time></a> <span class="says">said:</span>
+									</div><!-- .comment-author .vcard -->
+
+				
+			</footer>
+
+			<div class="comment-content"><p>@twam<br />
+so I guess the app wouldn&#8217;t ask for video data from driver right?</p>
+</div>
+
+			<div class="reply">
+				<a class='comment-reply-link' href='/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices?replytocom=9167#respond' onclick='return addComment.moveForm("comment-9167", "9167", "respond", "276")'>Reply <span>&darr;</span></a>			</div><!-- .reply -->
+		</article><!-- #comment-## -->
+
+	</li>
+	<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-9341">
+		<article id="comment-9341" class="comment">
+			<footer class="comment-meta">
+				<div class="comment-author vcard">
+					<img alt='' src='http://0.gravatar.com/avatar/a2ecfd1dcfd69232fe4f310ae1dfa02b?s=68&amp;d=http%3A%2F%2F0.gravatar.com%2Favatar%2Fad516503a11cd5ca435acc9bb6523536%3Fs%3D68&amp;r=G' class='avatar avatar-68 photo' height='68' width='68' /><span class="fn">Yangpu</span> on <a href="http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices#comment-9341"><time datetime="2013-01-18T10:40:09+00:00">January 18, 2013 at 10:40</time></a> <span class="says">said:</span>
+									</div><!-- .comment-author .vcard -->
+
+				
+			</footer>
+
+			<div class="comment-content"><p>One error is caught:<br />
+Pixel format V4L2_PIX_FMT_JPEG not supported!</p>
+<p>How to grab a JPEG frame from a usb camera with V4L2_PIX_FMT_JPEG support only?</p>
+</div>
+
+			<div class="reply">
+				<a class='comment-reply-link' href='/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices?replytocom=9341#respond' onclick='return addComment.moveForm("comment-9341", "9341", "respond", "276")'>Reply <span>&darr;</span></a>			</div><!-- .reply -->
+		</article><!-- #comment-## -->
+
+	</li>
+	<li class="comment byuser comment-author-twam bypostauthor even thread-even depth-1" id="li-comment-9342">
+		<article id="comment-9342" class="comment">
+			<footer class="comment-meta">
+				<div class="comment-author vcard">
+					<img alt='' src='http://1.gravatar.com/avatar/f1f1b5a4161ee3e457fdb791257f76a3?s=68&amp;d=http%3A%2F%2F1.gravatar.com%2Favatar%2Fad516503a11cd5ca435acc9bb6523536%3Fs%3D68&amp;r=G' class='avatar avatar-68 photo' height='68' width='68' /><span class="fn"><a href='http://www.twam.info' rel='external nofollow' class='url'>twam</a></span> on <a href="http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices#comment-9342"><time datetime="2013-01-18T10:41:42+00:00">January 18, 2013 at 10:41</time></a> <span class="says">said:</span>
+									</div><!-- .comment-author .vcard -->
+
+				
+			</footer>
+
+			<div class="comment-content"><p><a href="#comment-9341" rel="nofollow">@Yangpu</a><br />
+You would have to implement the function capable of reading the format. As my cameras doesn&#8217;t support this format, I&#8217;m not able to try this <img src='http://www.twam.info/wp-includes/images/smilies/icon_sad.gif' alt=':(' class='wp-smiley' /> </p>
+</div>
+
+			<div class="reply">
+				<a class='comment-reply-link' href='/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices?replytocom=9342#respond' onclick='return addComment.moveForm("comment-9342", "9342", "respond", "276")'>Reply <span>&darr;</span></a>			</div><!-- .reply -->
+		</article><!-- #comment-## -->
+
+	</li>
+	<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-9525">
+		<article id="comment-9525" class="comment">
+			<footer class="comment-meta">
+				<div class="comment-author vcard">
+					<img alt='' src='http://0.gravatar.com/avatar/a7dff3b09c166e6ea6b3d4b403510bfb?s=68&amp;d=http%3A%2F%2F0.gravatar.com%2Favatar%2Fad516503a11cd5ca435acc9bb6523536%3Fs%3D68&amp;r=G' class='avatar avatar-68 photo' height='68' width='68' /><span class="fn">Keybo</span> on <a href="http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices#comment-9525"><time datetime="2013-01-28T02:09:38+00:00">January 28, 2013 at 02:09</time></a> <span class="says">said:</span>
+									</div><!-- .comment-author .vcard -->
+
+				
+			</footer>
+
+			<div class="comment-content"><p>HI,</p>
+<p>Thanks for sharing!<br />
+I&#8217;m a beginner on Linux and we need our camera to take pictures for our project.<br />
+I am using a beagleboard xM that runs Angstrom with kernel 2.6.32.<br />
+I first installed libjpeg using tarbal from their website. And then i tired your v0.1 and latest version from github; both of them were built fine but when i run them they give:<br />
+./v4l2grab: error while loading shared libraries: libjpeg.so.9: cannot open shared object file: No such file or directory</p>
+<p>Any idea?</p>
+<p>Your help is very much appreciated!!</p>
+</div>
+
+			<div class="reply">
+				<a class='comment-reply-link' href='/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices?replytocom=9525#respond' onclick='return addComment.moveForm("comment-9525", "9525", "respond", "276")'>Reply <span>&darr;</span></a>			</div><!-- .reply -->
+		</article><!-- #comment-## -->
+
+	<ul class='children'>
+	<li class="comment byuser comment-author-twam bypostauthor even depth-2" id="li-comment-9540">
+		<article id="comment-9540" class="comment">
+			<footer class="comment-meta">
+				<div class="comment-author vcard">
+					<img alt='' src='http://1.gravatar.com/avatar/f1f1b5a4161ee3e457fdb791257f76a3?s=39&amp;d=http%3A%2F%2F1.gravatar.com%2Favatar%2Fad516503a11cd5ca435acc9bb6523536%3Fs%3D39&amp;r=G' class='avatar avatar-39 photo' height='39' width='39' /><span class="fn"><a href='http://www.twam.info' rel='external nofollow' class='url'>twam</a></span> on <a href="http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices#comment-9540"><time datetime="2013-01-28T10:03:18+00:00">January 28, 2013 at 10:03</time></a> <span class="says">said:</span>
+									</div><!-- .comment-author .vcard -->
+
+				
+			</footer>
+
+			<div class="comment-content"><p>You can run</p>
+<pre>ldd v4l2grab</pre>
+<p>to see against with librarys your program is linked. You should something like</p>
+<pre>	linux-vdso.so.1 =>  (0x00007fff70185000)
+	libjpeg.so.8 => /usr/lib/x86_64-linux-gnu/libjpeg.so.8 (0x00007f0630710000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f0630351000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007f0630984000)
+</pre>
+<p>If libjpeg.so.* is not found, check that the file is one of your lib directories or set LD_LIBRARY_PATH accordingly. Maybe you forgot an make install as root after compiling your libjpeg.</p>
+</div>
+
+			<div class="reply">
+				<a class='comment-reply-link' href='/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices?replytocom=9540#respond' onclick='return addComment.moveForm("comment-9540", "9540", "respond", "276")'>Reply <span>&darr;</span></a>			</div><!-- .reply -->
+		</article><!-- #comment-## -->
+
+	<ul class='children'>
+	<li class="comment odd alt depth-3" id="li-comment-9572">
+		<article id="comment-9572" class="comment">
+			<footer class="comment-meta">
+				<div class="comment-author vcard">
+					<img alt='' src='http://0.gravatar.com/avatar/a7dff3b09c166e6ea6b3d4b403510bfb?s=39&amp;d=http%3A%2F%2F0.gravatar.com%2Favatar%2Fad516503a11cd5ca435acc9bb6523536%3Fs%3D39&amp;r=G' class='avatar avatar-39 photo' height='39' width='39' /><span class="fn">Keybo</span> on <a href="http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices#comment-9572"><time datetime="2013-01-28T23:48:04+00:00">January 28, 2013 at 23:48</time></a> <span class="says">said:</span>
+									</div><!-- .comment-author .vcard -->
+
+				
+			</footer>
+
+			<div class="comment-content"><p>Hi,</p>
+<p>Thanks alot for your fast reply!<br />
+I did check with &#8220;ldd&#8221; and yes it says &#8221; libjpeg.so.9 =&gt; not found&#8221;<br />
+However, when I do &#8220;ls /usr/local/lib&#8221;, the libjpeg.so* files are there&#8230;</p>
+<p>So i copied the lbjpeg.so.9 from /usr/local/lib to /lib and now v4l2Grab works.</p>
+<p>However, when I call imgcmp, which is a part of jasPer and that it seems to require libjpeg at runtime, it prompts&#8221; JPEG decoder not available&#8221;&#8230;.and asks me to install libjpeg&#8230;<br />
+I did &#8220;ldd imgcmp&#8221; and it says:<br />
+        libm.so.6 =&gt; /lib/libm.so.6 (0&#215;40026000)<br />
+        libgcc_s.so.1 =&gt; /lib/libgcc_s.so.1 (0&#215;40099000)<br />
+        libc.so.6 =&gt; /lib/libc.so.6 (0x400ab000)<br />
+        /lib/ld-linux.so.3 (0&#215;40000000)<br />
+Which seems to say that all needed .so files are in /lib&#8230;</p>
+<p>I don&#8217;t know whats going on&#8230;</p>
+<p>Thanks,</p>
+</div>
+
+			<div class="reply">
+				<a class='comment-reply-link' href='/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices?replytocom=9572#respond' onclick='return addComment.moveForm("comment-9572", "9572", "respond", "276")'>Reply <span>&darr;</span></a>			</div><!-- .reply -->
+		</article><!-- #comment-## -->
+
+	</li>
+</ul>
+</li>
+</ul>
+</li>
+	<li class="comment even thread-even depth-1" id="li-comment-9821">
+		<article id="comment-9821" class="comment">
+			<footer class="comment-meta">
+				<div class="comment-author vcard">
+					<img alt='' src='http://0.gravatar.com/avatar/24ac77621325e7e656f9a025fdd9252c?s=68&amp;d=http%3A%2F%2F0.gravatar.com%2Favatar%2Fad516503a11cd5ca435acc9bb6523536%3Fs%3D68&amp;r=G' class='avatar avatar-68 photo' height='68' width='68' /><span class="fn">Rob Kleissen</span> on <a href="http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices#comment-9821"><time datetime="2013-02-06T09:46:32+00:00">February 6, 2013 at 09:46</time></a> <span class="says">said:</span>
+									</div><!-- .comment-author .vcard -->
+
+				
+			</footer>
+
+			<div class="comment-content"><p>Hi Tobias,<br />
+thanks for posting the code. I confirm that the code compiles flawlessly and works on my Debian Squeeze system. I was able to capture images at the highest possible resolution ( 2592 x 1944 pixes) from a Logitech C-910 webcam.<br />
+Cheers, Rob</p>
+</div>
+
+			<div class="reply">
+				<a class='comment-reply-link' href='/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices?replytocom=9821#respond' onclick='return addComment.moveForm("comment-9821", "9821", "respond", "276")'>Reply <span>&darr;</span></a>			</div><!-- .reply -->
+		</article><!-- #comment-## -->
+
+	</li>
+	<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-10450">
+		<article id="comment-10450" class="comment">
+			<footer class="comment-meta">
+				<div class="comment-author vcard">
+					<img alt='' src='http://0.gravatar.com/avatar/648f7a877767db2f967990184a7702cb?s=68&amp;d=http%3A%2F%2F0.gravatar.com%2Favatar%2Fad516503a11cd5ca435acc9bb6523536%3Fs%3D68&amp;r=G' class='avatar avatar-68 photo' height='68' width='68' /><span class="fn">Scottie</span> on <a href="http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices#comment-10450"><time datetime="2013-03-10T02:22:47+00:00">March 10, 2013 at 02:22</time></a> <span class="says">said:</span>
+									</div><!-- .comment-author .vcard -->
+
+				
+			</footer>
+
+			<div class="comment-content"><p>Thanks &#8211; works well on my Raspberry Pi running Archlinux.</p>
+</div>
+
+			<div class="reply">
+				<a class='comment-reply-link' href='/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices?replytocom=10450#respond' onclick='return addComment.moveForm("comment-10450", "10450", "respond", "276")'>Reply <span>&darr;</span></a>			</div><!-- .reply -->
+		</article><!-- #comment-## -->
+
+	<ul class='children'>
+	<li class="comment even depth-2" id="li-comment-10451">
+		<article id="comment-10451" class="comment">
+			<footer class="comment-meta">
+				<div class="comment-author vcard">
+					<img alt='' src='http://0.gravatar.com/avatar/648f7a877767db2f967990184a7702cb?s=39&amp;d=http%3A%2F%2F0.gravatar.com%2Favatar%2Fad516503a11cd5ca435acc9bb6523536%3Fs%3D39&amp;r=G' class='avatar avatar-39 photo' height='39' width='39' /><span class="fn">Scottie</span> on <a href="http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices#comment-10451"><time datetime="2013-03-10T03:03:22+00:00">March 10, 2013 at 03:03</time></a> <span class="says">said:</span>
+									</div><!-- .comment-author .vcard -->
+
+				
+			</footer>
+
+			<div class="comment-content"><p>I should add that I compiled v0.1. Version 0.3 from the github complains that libv4l2.h is missing</p>
+</div>
+
+			<div class="reply">
+				<a class='comment-reply-link' href='/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices?replytocom=10451#respond' onclick='return addComment.moveForm("comment-10451", "10451", "respond", "276")'>Reply <span>&darr;</span></a>			</div><!-- .reply -->
+		</article><!-- #comment-## -->
+
+	<ul class='children'>
+	<li class="comment byuser comment-author-twam bypostauthor odd alt depth-3" id="li-comment-10454">
+		<article id="comment-10454" class="comment">
+			<footer class="comment-meta">
+				<div class="comment-author vcard">
+					<img alt='' src='http://1.gravatar.com/avatar/f1f1b5a4161ee3e457fdb791257f76a3?s=39&amp;d=http%3A%2F%2F1.gravatar.com%2Favatar%2Fad516503a11cd5ca435acc9bb6523536%3Fs%3D39&amp;r=G' class='avatar avatar-39 photo' height='39' width='39' /><span class="fn"><a href='http://www.twam.info' rel='external nofollow' class='url'>twam</a></span> on <a href="http://www.twam.info/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices#comment-10454"><time datetime="2013-03-10T10:22:48+00:00">March 10, 2013 at 10:22</time></a> <span class="says">said:</span>
+									</div><!-- .comment-author .vcard -->
+
+				
+			</footer>
+
+			<div class="comment-content"><p>The latest version (0.4.1) should be noticeable faster, when you want to grab many pictures.</p>
+<p>When you found out, how the corresponding packages you need are installed on Arch Linux, please add them to the <a href="https://github.com/twam/v4l2grab/wiki/Installation" rel="nofollow">Installation instructions</a>.</p>
+</div>
+
+			<div class="reply">
+				<a class='comment-reply-link' href='/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices?replytocom=10454#respond' onclick='return addComment.moveForm("comment-10454", "10454", "respond", "276")'>Reply <span>&darr;</span></a>			</div><!-- .reply -->
+		</article><!-- #comment-## -->
+
+	</li>
+</ul>
+</li>
+</ul>
+</li>
+		</ol>
+
+		
+		
+	
+	<div id="respond-form">
+									<div id="respond">
+				<h3 id="reply-title">Leave a Reply <small><a rel="nofollow" id="cancel-comment-reply-link" href="/linux/v4l2grab-grabbing-jpegs-from-v4l2-devices#respond" style="display:none;">Cancel reply</a></small></h3>
+									<form action="http://www.twam.info/wp-comments-post.php" method="post" id="commentform">
+																			<p class="comment-notes">Your email address will not be published. Required fields are marked <span class="required">*</span></p>							<p class="comment-form-author"><label for="author">Name <span class="required">*</span></label> <input id="author" name="author" type="text" value="" size="30" aria-required='true' /></p>
+<p class="comment-form-email"><label for="email">Email <span class="required">*</span></label> <input id="email" name="email" type="text" value="" size="30" aria-required='true' /></p>
+<p class="comment-form-url"><label for="url">Website</label><input id="url" name="url" type="text" value="" size="30" /></p>
+												<p class="comment-form-comment"><label for="comment">Comment</label><textarea id="comment" name="comment" cols="45" rows="8" aria-required="true"></textarea></p>						<p class="form-allowed-tags">You may use these <abbr title="HyperText Markup Language">HTML</abbr> tags and attributes:  <code>&lt;a href=&quot;&quot; title=&quot;&quot;&gt; &lt;abbr title=&quot;&quot;&gt; &lt;acronym title=&quot;&quot;&gt; &lt;b&gt; &lt;blockquote cite=&quot;&quot;&gt; &lt;cite&gt; &lt;code&gt; &lt;del datetime=&quot;&quot;&gt; &lt;em&gt; &lt;i&gt; &lt;q cite=&quot;&quot;&gt; &lt;strike&gt; &lt;strong&gt; </code></p>						<p class="form-submit">
+							<input name="submit" type="submit" id="submit" value="Post Comment" />
+							<input type='hidden' name='comment_post_ID' value='276' id='comment_post_ID' />
+<input type='hidden' name='comment_parent' id='comment_parent' value='0' />
+						</p>
+						<p style="display: none;"><input type="hidden" id="akismet_comment_nonce" name="akismet_comment_nonce" value="a22c76adba" /></p>					</form>
+							</div><!-- #respond -->
+			        <script type="text/javascript">
+            jQuery(document).ready(function () {
+                jQuery('#commentform').submit(function () {
+                    _gaq.push(
+                            ['_setAccount', 'UA-7988949-1'],
+                            ['_trackEvent', 'comment', 'submit']
+                    );
+                });
+            });
+        </script>
+						</div>
+</div><!-- #comments -->
+
+				
+			</div><!-- #content -->
+		</div><!-- #primary -->
+
+
+	</div><!-- #main -->
+
+	<footer id="colophon" role="contentinfo">
+
+			
+
+				</footer><!-- #colophon -->
+</div><!-- #page -->
+
+<!-- MathJax Latex Plugin installed: Disabled as no shortcodes on this page --><script type='text/javascript' src='http://www.twam.info/wp-content/plugins/prettify-code-syntax/javascripts/prettify.js?ver=3.5.1'></script>
+<script type='text/javascript' src='http://www.twam.info/wp-content/plugins/prettify-code-syntax/javascripts/load.js?ver=3.5.1'></script>
+
+</body>
+</html>
