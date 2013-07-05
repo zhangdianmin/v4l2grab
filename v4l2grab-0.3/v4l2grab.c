@@ -21,6 +21,13 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
+/**
+ debug imformation
+ */
+#if !defined DUBUG
+#define DEBUG
+#endif
+
 
 // compile with all three access methods
 #if !defined(IO_READ) && !defined(IO_MMAP) && !defined(IO_USERPTR)
@@ -61,6 +68,13 @@ typedef enum {
         IO_METHOD_USERPTR,
 #endif
 } io_method;
+
+/*-----------------------------------------------------------------------------*/
+/* for system time*/
+int gettimeofday(struct timeval *tv, struct timezone *tz);
+int settimeofday(const struct timeval *tv , const struct timezone *tz);
+struct timeval t_start;
+/*-----------------------------------------------------------------------------*/
 
 struct buffer {
         void *                  start;
@@ -118,9 +132,13 @@ static void jpegWrite(unsigned char* img)
 {
 	struct jpeg_compress_struct cinfo;
 	struct jpeg_error_mgr jerr;
+	char   filename[0xff];
 
 	JSAMPROW row_pointer[1];
-	FILE *outfile = fopen( jpegFilename, "wb" );
+	//FILE *outfile = fopen( jpegFilename, "wb" );
+	strcpy(filename,jpegFilename);
+	strcat(filename,".jpg");
+	FILE *outfile = fopen( filename, "wb" );
 
 	// try to open file for saving
 	if (!outfile) {
@@ -137,6 +155,8 @@ static void jpegWrite(unsigned char* img)
 	cinfo.image_height = height;
 	cinfo.input_components = 3;
 	cinfo.in_color_space = JCS_RGB;
+	//cinfo.input_components = 2;
+	//cinfo.in_color_space = JCS_YCbCr;
 
 	// set jpeg compression parameters to default
 	jpeg_set_defaults(&cinfo);
@@ -163,34 +183,277 @@ static void jpegWrite(unsigned char* img)
 }
 
 /**
+	Write YUV to file.
+
+	\param img image to write
+*/
+static void YUVWrite(unsigned char* yuvsrc)
+{
+	FILE * fp;
+	char 		   filename[0xff];
+	#ifdef DEBUG
+		gettimeofday(&t_start, NULL);
+		printf("[%ld %ld us]", t_start.tv_sec,t_start.tv_usec);
+		printf("Start to save YUV file...\n");
+	#endif
+
+	strcpy(filename,jpegFilename);
+	strcat(filename,".yuv");
+	fp = fopen(filename, "wb");
+	if(!fp)
+	{
+		printf("open YUV error\n");
+		errno_exit("yuv");
+	}
+   
+	fwrite(yuvsrc, width*height*2, 1, fp);
+
+	#ifdef DEBUG
+		gettimeofday(&t_start, NULL);
+		printf("[%ld %ld us]", t_start.tv_sec,t_start.tv_usec);
+		printf("YUV file save done!\n");
+	#endif
+	fclose(fp);
+}
+
+
+/**
+	Write BMP to file.
+
+	\param img image to write
+*/
+static void BMPWrite(unsigned char* rgbsrc)
+{
+	FILE * fp;
+	BITMAPFILEHEADER   bf;
+	BITMAPINFOHEADER   bi;
+	char 		   filename[0xff];
+	#ifdef DEBUG
+		gettimeofday(&t_start, NULL);
+		printf("[%ld %ld us]", t_start.tv_sec,t_start.tv_usec);
+		printf("Start to save BMP file...\n");
+	#endif
+
+	//fp = fopen(BMP, "wb");
+	strcpy(filename,jpegFilename);
+	strcat(filename,".bmp");
+	fp = fopen(filename, "wb");
+	if(!fp)
+	{
+		printf("open BMP error\n");
+		errno_exit("bmp");
+	}
+
+	//Set BITMAPINFOHEADER
+	bi.biSize = 40;
+	bi.biWidth = width;
+	bi.biHeight = height;
+	bi.biPlanes = 1;
+	bi.biBitCount = 24;
+	bi.biCompression = 0;
+	bi.biSizeImage = width*height*3;
+	bi.biXPelsPerMeter = 0;
+	bi.biYPelsPerMeter = 0;
+	bi.biClrUsed = 0;
+	bi.biClrImportant = 0;
+
+	//Set BITMAPFILEHEADER
+	bf.bfType = 0x4d42;
+	bf.bfSize = 54 + bi.biSizeImage;     
+	bf.bfReserved = 0;
+	bf.bfOffBits = 54;
+
+	fwrite(&bf, 14, 1, fp);
+	fwrite(&bi, 40, 1, fp);
+	fwrite(rgbsrc, bi.biSizeImage, 1, fp);
+	//Vertical mirror the BMP image
+	int i;
+	char *buf = malloc(bi.biSizeImage);
+	for(i=0;i<height;i++){
+		memcpy(buf+i*width*3,rgbsrc+(height-i-1)*width*3,width*3);  
+	}
+
+	//fwrite(buf, bi.biSizeImage, 1, fp);
+	free(buf);
+
+	#ifdef DEBUG
+		gettimeofday(&t_start, NULL);
+		printf("[%ld %ld us]", t_start.tv_sec,t_start.tv_usec);
+		printf("BMP file save done!\n");
+	#endif
+	fclose(fp);
+}
+/**
 	process image read
 */
 static void imageProcess(const void* p)
 {
 	unsigned char* src = (unsigned char*)p;
 	unsigned char* dst = malloc(width*height*3*sizeof(char));
-
+	
+	#ifdef DEBUG
+		gettimeofday(&t_start, NULL);
+		printf("[%ld %ld us]", t_start.tv_sec,t_start.tv_usec);
+		printf("Process doing from YUV420/YUV422 to RGB888\n");
+	#endif
 	switch (pixelformat) {
 		case V4L2_PIX_FMT_YUV420:
 			// convert from YUV420 to RGB888
 			YUV420toRGB888(width,height,src,dst);
+			#ifdef DEBUG
+				gettimeofday(&t_start, NULL);
+				printf("[%ld %ld us]", t_start.tv_sec,t_start.tv_usec);
+				printf("process doing from YUV420 to RGB888 done\n");
+			#endif
 			break;
 
 		case V4L2_PIX_FMT_YUYV:
 			// convert from YUV422 to RGB888
 			YUV422toRGB888(width,height,src,dst);
+			#ifdef DEBUG
+				gettimeofday(&t_start, NULL);
+				printf("[%ld %ld us]", t_start.tv_sec,t_start.tv_usec);
+				printf("Process doing from YUV422 to RGB888 done\n");
+			#endif
 			break;
 
 		default:
 			fprintf(stderr, "Pixelformat of device not supported!\n");
 			exit(-1);
 	}
+	YUVWrite(src);
+	BMPWrite(dst);
 
 	// write jpeg
+	#ifdef DEBUG
+		gettimeofday(&t_start, NULL);
+		printf("[%ld %ld us]", t_start.tv_sec,t_start.tv_usec);
+		printf("JPEG Process start....\n");
+	#endif
 	jpegWrite(dst);
-
+	#ifdef DEBUG
+		gettimeofday(&t_start, NULL);
+		printf("[%ld %ld us]", t_start.tv_sec,t_start.tv_usec);
+		printf("JPEG process done!\n");
+	#endif
 	// free temporary image
 	free(dst);
+	#ifdef DEBUG
+		gettimeofday(&t_start, NULL);
+		printf("[%ld %ld us]", t_start.tv_sec,t_start.tv_usec);
+		printf("Free temporary image done!\n");
+	#endif
+}
+
+/**
+	read single frame for clear the starting buffer 
+*/
+//static int frameRead(void)
+static int preframeRead(void)
+{
+	struct v4l2_buffer buf;
+#ifdef IO_USERPTR
+	unsigned int i;
+#endif
+	#ifdef DEBUG
+	gettimeofday(&t_start, NULL);
+	printf("[%ld %ld us]", t_start.tv_sec,t_start.tv_usec);
+	printf("IO_MMP buffer ok,for read buf to clear the start several frame.\n");
+	#endif
+	switch (io) {
+#ifdef IO_READ
+		case IO_METHOD_READ:
+			if (-1 == read (fd, buffers[0].start, buffers[0].length)) {
+				switch (errno) {
+					case EAGAIN:
+						return 0;
+
+					case EIO:
+						// Could ignore EIO, see spec.
+						// fall through
+
+					default:
+						errno_exit("read");
+				}
+			}
+			#ifdef DEBUG
+				gettimeofday(&t_start, NULL);
+				printf("[%ld %ld us]", t_start.tv_sec,t_start.tv_usec);
+				printf("IO_READ buffer ok,start to imageprocess.\n");
+			#endif
+			imageProcess(buffers[0].start);
+			break;
+#endif
+
+#ifdef IO_MMAP
+		case IO_METHOD_MMAP:
+			CLEAR(buf);
+
+			buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+			buf.memory = V4L2_MEMORY_MMAP;
+
+			if (-1 == xioctl(fd, VIDIOC_DQBUF, &buf)) {
+				switch (errno) {
+					case EAGAIN:
+						return 0;
+
+					case EIO:
+						// Could ignore EIO, see spec
+						// fall through
+
+					default:
+						errno_exit("VIDIOC_DQBUF");
+				}
+			}
+
+			assert(buf.index < n_buffers);
+			
+			if (-1 == xioctl(fd, VIDIOC_QBUF, &buf))
+				errno_exit("VIDIOC_QBUF");
+
+			break;
+#endif
+
+#ifdef IO_USERPTR
+			case IO_METHOD_USERPTR:
+				CLEAR (buf);
+
+				buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+				buf.memory = V4L2_MEMORY_USERPTR;
+
+				if (-1 == xioctl(fd, VIDIOC_DQBUF, &buf)) {
+					switch (errno) {
+						case EAGAIN:
+							return 0;
+
+						case EIO:
+							// Could ignore EIO, see spec.
+							// fall through
+
+						default:
+							errno_exit("VIDIOC_DQBUF");
+					}
+				}
+
+				for (i = 0; i < n_buffers; ++i)
+					if (buf.m.userptr == (unsigned long) buffers[i].start && buf.length == buffers[i].length)
+						break;
+
+				assert (i < n_buffers);
+				#ifdef DEBUG
+				gettimeofday(&t_start, NULL);
+				printf("[%ld %ld us]", t_start.tv_sec,t_start.tv_usec);
+				printf("IO_USERPTR buffer ok,start imageprocess\n");
+				#endif
+				imageProcess((void *)buf.m.userptr);
+
+				if (-1 == xioctl(fd, VIDIOC_QBUF, &buf))
+					errno_exit("VIDIOC_QBUF");
+				break;
+#endif
+	}
+
+	return 1;
 }
 
 /**
@@ -219,7 +482,11 @@ static int frameRead(void)
 						errno_exit("read");
 				}
 			}
-
+			#ifdef DEBUG
+				gettimeofday(&t_start, NULL);
+				printf("[%ld %ld us]", t_start.tv_sec,t_start.tv_usec);
+				printf("IO_READ buffer ok,start to image process.\n");
+			#endif
 			imageProcess(buffers[0].start);
 			break;
 #endif
@@ -246,8 +513,14 @@ static int frameRead(void)
 			}
 
 			assert(buf.index < n_buffers);
+			#ifdef DEBUG
+				gettimeofday(&t_start, NULL);
+				printf("[%ld %ld us]", t_start.tv_sec,t_start.tv_usec);
+				printf("IO_MMP buffer ok,start to image process.\n");
+			#endif
 
 			imageProcess(buffers[buf.index].start);
+
 
 			if (-1 == xioctl(fd, VIDIOC_QBUF, &buf))
 				errno_exit("VIDIOC_QBUF");
@@ -281,7 +554,11 @@ static int frameRead(void)
 						break;
 
 				assert (i < n_buffers);
-
+				#ifdef DEBUG
+				gettimeofday(&t_start, NULL);
+				printf("[%ld %ld us]", t_start.tv_sec,t_start.tv_usec);
+				printf("IO_USERPTR buffer ok,start image process\n");
+				#endif
 				imageProcess((void *)buf.m.userptr);
 
 				if (-1 == xioctl(fd, VIDIOC_QBUF, &buf))
@@ -300,10 +577,9 @@ static void mainLoop(void)
 {
 	unsigned int count;
 	unsigned int numberOfTimeouts;
-
+	//---------------------------------------------------------------------
 	numberOfTimeouts = 0;
-	count = 1;
-
+	count = 20;
 	while (count-- > 0) {
 		for (;;) {
 			fd_set fds;
@@ -334,9 +610,49 @@ static void mainLoop(void)
 					exit(EXIT_FAILURE);
 				}
 			}
+			if (preframeRead())
+				break;
+		
 
+			/* EAGAIN - continue select loop. */
+		}
+	}
+	//---------------------------------------------------------------------
+	numberOfTimeouts = 0;
+	count = 1;
+	while (count-- > 0) {
+		for (;;) {
+			fd_set fds;
+			struct timeval tv;
+			int r;
+
+			FD_ZERO(&fds);
+			FD_SET(fd, &fds);
+
+			/* Timeout. */
+			tv.tv_sec = 1;
+			tv.tv_usec = 0;
+
+			r = select(fd + 1, &fds, NULL, NULL, &tv);
+
+			if (-1 == r) {
+				if (EINTR == errno)
+					continue;
+
+				errno_exit("select");
+			}
+
+			if (0 == r) {
+				if (numberOfTimeouts <= 0) {
+					count++;
+				} else {
+					fprintf(stderr, "select timeout\n");
+					exit(EXIT_FAILURE);
+				}
+			}
 			if (frameRead())
 				break;
+		
 
 			/* EAGAIN - continue select loop. */
 		}
@@ -372,6 +688,12 @@ static void captureStop(void)
 			break;
 #endif
 	}
+	#ifdef DEBUG
+		gettimeofday(&t_start, NULL);
+		printf("[%ld %ld us]", t_start.tv_sec,t_start.tv_usec);
+		printf("Capture stop done\n");
+	#endif
+		
 }
 
 /**
@@ -437,12 +759,21 @@ static void captureStart(void)
 			break;
 #endif
 	}
+	#ifdef DEBUG
+		gettimeofday(&t_start, NULL);
+		printf("[%ld %ld us]", t_start.tv_sec,t_start.tv_usec);
+		printf("Capture start...\n");
+	#endif
 }
 
 static void deviceUninit(void)
 {
 	unsigned int i;
-
+	#ifdef DEBUG
+		gettimeofday(&t_start, NULL);
+		printf("[%ld %ld us]", t_start.tv_sec,t_start.tv_usec);
+		printf("Devide uninit start...\n");
+	#endif
 	switch (io) {
 #ifdef IO_READ
 		case IO_METHOD_READ:
@@ -467,6 +798,11 @@ static void deviceUninit(void)
 	}
 
 	free(buffers);
+	#ifdef DEBUG
+		gettimeofday(&t_start, NULL);
+		printf("[%ld %ld us]", t_start.tv_sec,t_start.tv_usec);
+		printf("Devide uninit stop done\n");
+	#endif
 }
 
 #ifdef IO_READ
@@ -609,7 +945,37 @@ static void deviceInit(void)
 		fprintf(stderr, "%s is no video capture device\n",deviceName);
 		exit(EXIT_FAILURE);
 	}
-
+	#ifdef DEBUG 
+	gettimeofday(&t_start, NULL);
+	printf("[%ld %ld us]", t_start.tv_sec,t_start.tv_usec);
+	if (!(cap.capabilities & V4L2_CAP_READWRITE)) {
+		printf("%s does not support read i/o\n",deviceName);
+		//exit(EXIT_FAILURE);
+	}
+	else{
+		printf("%s does support read i/o\n",deviceName);
+	}
+	if (!(cap.capabilities & V4L2_CAP_STREAMING)) {
+                printf("%s does not support streaming i/o\n",deviceName);
+                //exit(EXIT_FAILURE);
+        }
+	else{
+		printf("%s does support streaming i/o\n",deviceName);
+	}
+	if (!(cap.capabilities & V4L2_CAP_VIDEO_OVERLAY )) {
+                printf("%s does not support video voerlay i/o\n",deviceName);
+                //exit(EXIT_FAILURE);
+        }
+	else{
+		printf("%s does support video voerlay i/o\n",deviceName);
+	}
+	#endif
+	
+	#ifdef DEBUG 
+		gettimeofday(&t_start, NULL);
+		printf("[%ld %ld us]", t_start.tv_sec,t_start.tv_usec);
+		printf("%s is the V4L2 devide and support video capture\n",deviceName);
+	#endif
 	switch (io) {
 #ifdef IO_READ
 		case IO_METHOD_READ:
@@ -660,7 +1026,11 @@ static void deviceInit(void)
 	}
 
 	CLEAR(fmt);
-
+	#ifdef DEBUG
+		gettimeofday(&t_start, NULL);
+		printf("[%ld %ld us]", t_start.tv_sec,t_start.tv_usec);
+		printf("Select video input, video standard and tune here\n");
+	#endif
 
 	// query device
 	fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -688,7 +1058,7 @@ static void deviceInit(void)
 		height = fmt.fmt.pix.height;
 		fprintf(stderr,"Image height set to %i by device %s.\n",height,deviceName);
 	}
-
+	
 	/* Buggy driver paranoia. */
 	min = fmt.fmt.pix.width * 2;
 	if (fmt.fmt.pix.bytesperline < min)
@@ -696,6 +1066,16 @@ static void deviceInit(void)
 	min = fmt.fmt.pix.bytesperline * fmt.fmt.pix.height;
 	if (fmt.fmt.pix.sizeimage < min)
 		fmt.fmt.pix.sizeimage = min;
+
+	#ifdef DEBUG
+		gettimeofday(&t_start, NULL);
+		printf("[%ld %ld us]", t_start.tv_sec,t_start.tv_usec);
+	    	printf("fmt.type:\t\t%d\n",fmt.type);
+	     	printf("pix.pixelformat:\t%c%c%c%c\n",fmt.fmt.pix.pixelformat & 0xFF, (fmt.fmt.pix.pixelformat >> 8) & 0xFF,(fmt.fmt.pix.pixelformat >> 16) & 0xFF, (fmt.fmt.pix.pixelformat >> 24) & 0xFF); 		
+	    	printf("pix.height:\t\t%d\n",fmt.fmt.pix.height);
+	     	printf("pix.width:\t\t%d\n",fmt.fmt.pix.width);
+	     	printf("pix.field:\t\t%d\n",fmt.fmt.pix.field);
+	#endif
 
 	switch (io) {
 #ifdef IO_READ
@@ -727,6 +1107,11 @@ static void deviceClose(void)
 		errno_exit("close");
 
 	fd = -1;
+	#ifdef DEBUG
+		gettimeofday(&t_start, NULL);
+		printf("[%ld %ld us]", t_start.tv_sec,t_start.tv_usec);
+		printf("Close device done\n");
+	#endif
 }
 
 /**
@@ -756,6 +1141,11 @@ static void deviceOpen(void)
 		fprintf(stderr, "Cannot open '%s': %d, %s\n", deviceName, errno, strerror (errno));
 		exit(EXIT_FAILURE);
 	}
+	#ifdef DEBUG
+		gettimeofday(&t_start, NULL);
+		printf("[%ld %ld us]", t_start.tv_sec,t_start.tv_usec);
+		printf("Open '%s' success \n", deviceName);
+	#endif
 }
 
 /**
@@ -871,7 +1261,9 @@ int main(int argc, char **argv)
 				exit(EXIT_FAILURE);
 		}
 	}
-
+	gettimeofday(&t_start, NULL);
+	printf("[%ld %ld us]", t_start.tv_sec,t_start.tv_usec);
+	printf("The application start......\n\n");
 	// check for need parameters
 	if (!jpegFilename) {
 		fprintf(stderr, "You have to specify JPEG output filename!\n\n");

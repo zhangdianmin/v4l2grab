@@ -55,7 +55,7 @@ static void YUYtoRGB(unsigned char* y, unsigned char* u, unsigned char* v, unsig
 			*b = CLIP( (298*(*y-16) + 516*(*u-128) + 128) >> 8 );
 #endif
 }
-
+#if 0
 /**
 	Convert from YUV422 format to RGB888.
 
@@ -88,16 +88,21 @@ void YUV422toRGB888(int width, int height, unsigned char *src, unsigned char *ds
 
 			// increase py every time
 			py += 2;
-
+			#if 0
+			pu = py+1;
+			pv = py+3;
+			#endif				
+			#if 1
 			// increase pu,pv every second time
 			if ((column & 1)==1) {
 				pu += 4;
 				pv += 4;
 			}
+			#endif
 		}
 	}
 }
-
+#endif
 /**
 	Convert from YUV420 format to RGB888.
 
@@ -135,3 +140,77 @@ void YUV420toRGB888(int width, int height, unsigned char *src, unsigned char *ds
 		}
 	}
 }
+
+void YUV422toRGB888(int width, int height, unsigned char *src, unsigned char *dst)
+{
+	int           i,j;
+	unsigned char y1,y2,u,v;
+	int r1,g1,b1,r2,g2,b2;
+	unsigned char * pointer;
+    
+	pointer = src;
+	
+	for(i=0;i<height;i++)
+	{
+		for(j=0;j<width/2;j++)
+		{
+			y1 = *( pointer + (i*width/2+j)*4);
+			u  = *( pointer + (i*width/2+j)*4 + 1);
+			y2 = *( pointer + (i*width/2+j)*4 + 2);
+			v  = *( pointer + (i*width/2+j)*4 + 3);
+
+			r1 = y1 + 1.042*(v-128);
+			g1 = y1 - 0.34414*(u-128) - 0.71414*(v-128);
+			b1 = y1 + 1.772*(u-128);
+
+			r2 = y2 + 1.042*(v-128);
+			g2 = y2 - 0.34414*(u-128) - 0.71414*(v-128);
+			b2 = y2 + 1.772*(u-128);
+
+			if(r1>255)
+				r1 = 255;
+			else if(r1<0)
+				r1 = 0;
+
+			if(b1>255)
+				b1 = 255;
+			else if(b1<0)
+				b1 = 0;	
+
+			if(g1>255)
+				g1 = 255;
+			else if(g1<0)
+				g1 = 0;	
+	
+			if(r2>255)
+				r2 = 255;
+			else if(r2<0)
+				r2 = 0;
+
+			if(b2>255)
+				b2 = 255;
+			else if(b2<0)
+				b2 = 0;	
+
+			if(g2>255)
+				g2 = 255;
+			else if(g2<0)
+				g2 = 0;		
+	
+			//*(dst + ((height-1-i)*width/2+j)*6    ) = (unsigned char)b1;
+			//*(dst + ((height-1-i)*width/2+j)*6 + 1) = (unsigned char)g1;
+			//*(dst + ((height-1-i)*width/2+j)*6 + 2) = (unsigned char)r1;
+			//*(dst + ((height-1-i)*width/2+j)*6 + 3) = (unsigned char)b2;
+			//*(dst + ((height-1-i)*width/2+j)*6 + 4) = (unsigned char)g2;
+			//*(dst + ((height-1-i)*width/2+j)*6 + 5) = (unsigned char)r2;
+			*(dst + ((height-1-i)*width/2+j)*6    ) = (unsigned char)b1;
+			*(dst + ((height-1-i)*width/2+j)*6 + 1) = (unsigned char)g1;
+			*(dst + ((height-1-i)*width/2+j)*6 + 2) = (unsigned char)r1;
+			*(dst + ((height-1-i)*width/2+j)*6 + 3) = (unsigned char)b2;
+			*(dst + ((height-1-i)*width/2+j)*6 + 4) = (unsigned char)g2;
+			*(dst + ((height-1-i)*width/2+j)*6 + 5) = (unsigned char)r2;
+		}
+	}
+}
+
+
